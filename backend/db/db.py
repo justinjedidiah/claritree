@@ -1,6 +1,8 @@
-from sqlalchemy import create_engine, text
+from pathlib import Path 
+from sqlalchemy import create_engine
 
-DATABASE_URL = "sqlite:///finance.db"
+SCRIPT_DIR = Path(__file__).parent.absolute()
+DATABASE_URL = f"sqlite:///{SCRIPT_DIR / 'finance.db'}"
 
 engine = create_engine(
     DATABASE_URL,

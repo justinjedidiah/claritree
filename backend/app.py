@@ -1,13 +1,9 @@
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
+from db.db import engine
 
 app = FastAPI()
-
-engine = create_engine(
-    "sqlite:///backend/db/finance.db",
-    connect_args={"check_same_thread": False}
-)
 
 # ---------
 # Models
@@ -37,6 +33,26 @@ def run_sql(body: SQLQuery):
         rows = [dict(r._mapping) for r in result]
 
     return {"rows": rows}
+
+@app.get("/all_data")
+def all_data():
+    q = "SELECT * FROM financials"
+
+    with engine.connect() as conn:
+        r = conn.execute(text(q))
+        rows = [dict(x._mapping) for x in r]
+
+    return {"data": rows}
+
+@app.get("/all_formulas")
+def all_formulas():
+    q = "SELECT * FROM calculation_formulas"
+
+    with engine.connect() as conn:
+        r = conn.execute(text(q))
+        rows = [dict(x._mapping) for x in r]
+
+    return {"formulas": rows}
 
 @app.get("/metrics")
 def metrics():
@@ -87,7 +103,7 @@ def metric_values(
 ):
 
     q = """
-    SELECT month, nominal
+    SELECT month, nominal, mom_change, yoy_change
     FROM financials
     WHERE metric = :m
     """

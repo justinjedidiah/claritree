@@ -36,7 +36,7 @@ export default function MetricNode({ data }: NodeProps<MetricNodeData>) {
     >
       <Handle
         type="target"
-        position={Position.Left}
+        position={Position.Right}
         style={{ opacity: 0, pointerEvents: 'none' }}
         isConnectable={false}
       />
@@ -92,7 +92,7 @@ export default function MetricNode({ data }: NodeProps<MetricNodeData>) {
 
       <Handle
         type="source"
-        position={Position.Right}
+        position={Position.Left}
         style={{ opacity: 0, pointerEvents: 'none' }}
         isConnectable={false}
       />

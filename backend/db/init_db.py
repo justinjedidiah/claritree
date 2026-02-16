@@ -2,13 +2,15 @@ from db import engine
 from sqlalchemy import text
 
 create_sql_statements = ["""
-CREATE TABLE IF NOT EXISTS financials (
+CREATE OR REPLACE TABLE financials (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     period TEXT,
     metric TEXT,
-    nominal REAL
+    nominal REAL,
+    mom_change REAL,
+    yoy_change REAL
 );""", """
-CREATE TABLE IF NOT EXISTS calculation_formulas(
+CREATE OR REPLACE TABLE calculation_formulas(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     parent_metric TEXT,
     child_metric TEXT,

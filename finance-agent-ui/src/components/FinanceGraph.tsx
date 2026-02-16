@@ -22,7 +22,7 @@ const layoutGraph = (nodes: Node[], edges: Edge[]) => {
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   
   dagreGraph.setGraph({
-    rankdir: "LR",
+    rankdir: "RL",
     nodesep: 80,
     ranksep: 140
   });
@@ -60,8 +60,7 @@ const initialNodes: Node[] = [
     data: { 
       label: "Net Profit", 
       change: -12,
-      value: "$45K",
-      category: "profit"
+      value: "$45K"
     },
     position: { x: 0, y: 0 }
   },
@@ -71,8 +70,7 @@ const initialNodes: Node[] = [
     data: { 
       label: "Revenue", 
       change: 5,
-      value: "$280K",
-      category: "revenue"
+      value: "$280K"
     },
     position: { x: 0, y: 0 }
   },
@@ -82,8 +80,7 @@ const initialNodes: Node[] = [
     data: { 
       label: "Total Cost", 
       change: 18,
-      value: "$235K",
-      category: "cost"
+      value: "$235K"
     },
     position: { x: 0, y: 0 }
   },
@@ -93,8 +90,7 @@ const initialNodes: Node[] = [
     data: { 
       label: "Marketing", 
       change: 22,
-      value: "$85K",
-      category: "cost"
+      value: "$85K"
     },
     position: { x: 0, y: 0 }
   }

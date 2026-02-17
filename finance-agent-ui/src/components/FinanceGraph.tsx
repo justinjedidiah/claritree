@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -9,6 +9,7 @@ import ReactFlow, {
 import type { Node, Edge } from "reactflow";
 import dagre from "dagre";
 import "reactflow/dist/style.css";
+import { api } from "../api/client";
 
 import MetricNode from "./MetricNode";
 
@@ -53,79 +54,81 @@ const layoutGraph = (nodes: Node[], edges: Edge[]) => {
 };
 
 // ---------- DATA (outside component to prevent re-creation) ----------
-const initialNodes: Node[] = [
-  {
-    id: "profit",
-    type: "metric",
-    data: { 
-      label: "Net Profit", 
-      change: -12,
-      value: "$45K"
-    },
-    position: { x: 0, y: 0 }
-  },
-  {
-    id: "revenue",
-    type: "metric",
-    data: { 
-      label: "Revenue", 
-      change: 5,
-      value: "$280K"
-    },
-    position: { x: 0, y: 0 }
-  },
-  {
-    id: "cost",
-    type: "metric",
-    data: { 
-      label: "Total Cost", 
-      change: 18,
-      value: "$235K"
-    },
-    position: { x: 0, y: 0 }
-  },
-  {
-    id: "marketing",
-    type: "metric",
-    data: { 
-      label: "Marketing", 
-      change: 22,
-      value: "$85K"
-    },
-    position: { x: 0, y: 0 }
-  }
-];
+const processNodes = (rawNodesData: any[]): Node[] => {
+  return rawNodesData.map(rawNodeData => ({
+      id : rawNodeData.metric,
+      type: "metric",
+      data: {
+        period: rawNodeData.period,
+        metric: rawNodeData.metric,
+        nominal: rawNodeData.nominal,
+        mom_change: rawNodeData.mom_change,
+        yoy_change: rawNodeData.yoy_change
+      },
+      position: { x:0, y:0 }
+  }));
+}
 
-const initialEdges: Edge[] = [
-  { 
-    id: "e1", 
-    source: "revenue", 
-    target: "profit",
-  },
-  { 
-    id: "e2", 
-    source: "cost", 
-    target: "profit",
-  },
-  { 
-    id: "e3", 
-    source: "marketing", 
-    target: "cost",
-  }
-];
+const processEdges = (rawEdgesData: any[]): Edge[] => {
+  return rawEdgesData.map(rawEdgeData => ({
+    id: rawEdgeData.id,
+    target: rawEdgeData.target,
+    source: rawEdgeData.source,
+    style: {
+      stroke: rawEdgeData.operation == '+' ? '#16a34a' : '#dc2626',
+      strokeWidth: 2
+    }
+  }))
+}
+
+const fetchInitialData = async (): Promise<{nodes: Node[], edges: Edge[]}> => {
+  const resNodes = await api.get("/select_by_period/latest");
+  const resEdges = await api.get("/all_formulas");
+  const rawNodes = processNodes(resNodes.data.nodes);
+  const edges = processEdges(resEdges.data.formulas);
+  return {
+    nodes: layoutGraph(rawNodes, edges),
+    edges: edges
+  };
+}
+
+// const initialEdges: Edge[] = [
+//   { 
+//     id: "e1", 
+//     source: "revenue", 
+//     target: "profit",
+//   },
+//   { 
+//     id: "e2", 
+//     source: "cost", 
+//     target: "profit",
+//   },
+//   { 
+//     id: "e3", 
+//     source: "marketing", 
+//     target: "cost",
+//   }
+// ];
 
 // ---------- COMPONENT ----------
 function FinanceGraphInner() {
-  const layoutedNodes = useMemo(
-    () => layoutGraph(initialNodes, initialEdges),
-    []
-  );
+  const [nodes, setNodes] = useState<Node[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const data = await fetchInitialData();
+      setNodes(data.nodes);
+      setEdges(data.edges);
+    };
+    load();
+  },[]);
 
   return (
     <div style={{ height: '600px', width: '100%' }} className="bg-gray-950 rounded-xl">
       <ReactFlow
-        nodes={layoutedNodes}
-        edges={initialEdges}
+        nodes={nodes}
+        edges={edges}
         nodeTypes={nodeTypes}
         fitView
         minZoom={0.5}

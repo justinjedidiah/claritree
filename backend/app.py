@@ -2,6 +2,7 @@ from fastapi import FastAPI, Query
 from pydantic import BaseModel
 from sqlalchemy import text
 from db.db import engine
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
@@ -11,6 +12,24 @@ app = FastAPI()
 
 class SQLQuery(BaseModel):
     query: str
+
+
+# ---------
+# Utils
+# ---------
+
+origins = [
+    "http://localhost:5173",  # Vite default
+    "http://127.0.0.1:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
 
 
 # ---------
@@ -34,19 +53,22 @@ def run_sql(body: SQLQuery):
 
     return {"rows": rows}
 
-@app.get("/all_data")
-def all_data():
-    q = "SELECT * FROM financials"
+@app.get("/select_by_period/{period}")
+def all_data(period: str):
+    if period == 'latest':
+        q = "SELECT period, metric, nominal, mom_change, yoy_change FROM financials WHERE period = (select max(period) FROM financials)"
+    else:
+        q = "SELECT period, metric, nominal, mom_change, yoy_change FROM financials WHERE period = :period"
 
     with engine.connect() as conn:
-        r = conn.execute(text(q))
+        r = conn.execute(text(q), {"period": period})
         rows = [dict(x._mapping) for x in r]
 
-    return {"data": rows}
+    return {"nodes": rows}
 
 @app.get("/all_formulas")
 def all_formulas():
-    q = "SELECT * FROM calculation_formulas"
+    q = "SELECT id, parent_metric as target, child_metric as source, operation FROM calculation_formulas"
 
     with engine.connect() as conn:
         r = conn.execute(text(q))

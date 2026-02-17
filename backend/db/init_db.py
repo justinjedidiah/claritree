@@ -13,6 +13,15 @@ CREATE TABLE financials (
     yoy_change REAL
 );
 ""","""
+DROP TABLE IF EXISTS leaf_nodes;
+""","""
+CREATE TABLE leaf_nodes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    period TEXT,
+    metric TEXT,
+    nominal REAL
+);
+""","""
 DROP TABLE IF EXISTS calculation_formulas;
 ""","""
 CREATE TABLE calculation_formulas(

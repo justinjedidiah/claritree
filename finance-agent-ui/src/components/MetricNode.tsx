@@ -2,14 +2,15 @@ import { Handle, Position } from "reactflow";
 import type { NodeProps } from "reactflow";
 
 interface MetricNodeData {
-  label: string;
-  change?: number;
-  value?: string;
+  metric: string;
+  mom_change?: number;
+  yoy_change?: number;
+  nominal?: string;
 }
 
 export default function MetricNode({ data }: NodeProps<MetricNodeData>) {
-  const isPositive = data.change && data.change > 0;
-  const isNegative = data.change && data.change < 0;
+  const isPositive = data.mom_change && data.mom_change > 0;
+  const isNegative = data.mom_change && data.mom_change < 0;
 
   return (
     <div 
@@ -59,8 +60,8 @@ export default function MetricNode({ data }: NodeProps<MetricNodeData>) {
           overflow: 'hidden',    // Hide the extra text
           textOverflow: 'ellipsis', // Add the "..."
           flexShrink: 1          // Let the name shrink if space is tight
-        }}>{data.label}</span>
-        {data.change !== undefined && (
+        }}>{data.metric}</span>
+        {data.mom_change !== undefined && (
           <span style={{
             fontSize: '12px',
             fontWeight: '600',
@@ -68,13 +69,13 @@ export default function MetricNode({ data }: NodeProps<MetricNodeData>) {
             color: isPositive ? '#059669' : isNegative ? '#dc2626' : '#6b7280',
             flexShrink: 0         // Prevent the percentage from ever shrinking
           }}>
-            {isPositive ? "↑" : isNegative ? "↓" : ""}{Math.abs(data.change)}%
+            {isPositive ? "↑" : isNegative ? "↓" : ""}{Math.abs(data.mom_change).toFixed(2)}%
           </span>
         )}
       </div>
 
       {/* Value with grey background */}
-      {data.value && (
+      {data.nominal && (
         <div style={{
           fontSize: '15px',
           fontWeight: '600',
@@ -86,7 +87,7 @@ export default function MetricNode({ data }: NodeProps<MetricNodeData>) {
           display: 'block',
           textAlign: 'right',
         }}>
-          {data.value}
+          {data.nominal}
         </div>
       )}
 

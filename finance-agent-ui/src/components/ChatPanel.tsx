@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { API_URL } from '../api/client';
+import ReactMarkdown from 'react-markdown';
 
 export default function ChatPanel() {
   const [messages, setMessages] = useState([
@@ -89,7 +90,9 @@ export default function ChatPanel() {
             <div className={`max-w-[85%] p-3 rounded-lg text-sm ${
               msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'
             }`}>
-              {msg.text}
+              <ReactMarkdown>
+                {msg.text}
+              </ReactMarkdown>
             </div>
           </div>
         ))}

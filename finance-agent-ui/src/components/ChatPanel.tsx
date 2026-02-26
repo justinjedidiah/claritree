@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { API_URL } from '../api/client';
 
 export default function ChatPanel() {
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hello! How can I help you with your workflow?", sender: 'ai' }
+    { id: 1, text: "Hello! How can I help you with your workflow?", sender: 'assistant' }
   ]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages change
@@ -13,21 +15,67 @@ export default function ChatPanel() {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
-    const userMessage = { id: Date.now(), text: input, sender: 'user' };
-    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true); // Lock the function
+
+    const newUserMessage = {
+      id: Date.now(),
+      text: input,
+      sender: 'user'
+    };
+
+    const updatedMessages = [...messages, newUserMessage];
+    
+    setMessages(prev => [...prev, newUserMessage]);
     setInput('');
 
-    // Mock AI Response (Replace with your actual API call)
-    setTimeout(() => {
-      const aiResponse = { 
-        id: Date.now() + 1, 
-        text: `I'm analyzing your nodes... (Received: "${userMessage.text}")`, 
-        sender: 'ai' 
-      };
-      setMessages((prev) => [...prev, aiResponse]);
-    }, 1000);
+     // Create placeholder AI message
+    const aiMessageId = Date.now() + 1;
+    setMessages(prev => [
+      ...prev,
+      { id: aiMessageId, text: "", sender: "assistant" }
+    ]);
+
+    // AI Response
+    try {
+      const response = await fetch(`${API_URL}/chat/stream`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          messages: updatedMessages.map(m => ({
+            role: m.sender === 'user' ? 'user' : 'assistant',
+            content: m.text
+          }))
+        })
+      });
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      let done = false;
+
+      while (!done) {
+        const result = await reader!.read();
+        done = result.done;
+
+        const chunkValue = decoder.decode(result.value || new Uint8Array());
+
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === aiMessageId
+              ? { ...msg, text: msg.text + chunkValue }
+              : msg
+          )
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false); // Unlock the function
+    }
   };
 
   return (
@@ -58,8 +106,8 @@ export default function ChatPanel() {
             placeholder="Ask a question..." 
             className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
           />
-          <button onClick={handleSend} className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
-            Send
+          <button disabled={isLoading} onClick={handleSend} className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
+            {isLoading ? "Sending..." : "Send"}
           </button>
         </div>
       </div>

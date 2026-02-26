@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -24,8 +24,8 @@ const layoutGraph = (nodes: Node[], edges: Edge[]) => {
   
   dagreGraph.setGraph({
     rankdir: "RL",
-    nodesep: 80,
-    ranksep: 140
+    nodesep: 25,
+    ranksep: 75
   });
 
   nodes.forEach((node) => {
@@ -91,24 +91,6 @@ const fetchInitialData = async (): Promise<{nodes: Node[], edges: Edge[]}> => {
     edges: edges
   };
 }
-
-// const initialEdges: Edge[] = [
-//   { 
-//     id: "e1", 
-//     source: "revenue", 
-//     target: "profit",
-//   },
-//   { 
-//     id: "e2", 
-//     source: "cost", 
-//     target: "profit",
-//   },
-//   { 
-//     id: "e3", 
-//     source: "marketing", 
-//     target: "cost",
-//   }
-// ];
 
 // ---------- COMPONENT ----------
 function FinanceGraphInner() {

@@ -13,27 +13,8 @@ export default function MetricNode({ data }: NodeProps<MetricNodeData>) {
   const isNegative = data.mom_change && data.mom_change < 0;
 
   return (
-    <div 
-      style={{
-        background: 'rgba(59, 130, 246, 0.08)',
-        backdropFilter: 'blur(8px)',
-        color: '#1f2937',
-        padding: '6px 6px',
-        borderRadius: '9px',
-        border: '1px solid rgba(59, 130, 246, 0.15)',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-        width: '170px',
-        transition: 'all 0.2s ease',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
-      }}
+    <div
+      className="bg-blue-500/10 backdrop-blur-md text-gray-800 p-1.5 rounded-lg border border-blue-500/20 shadow-sm w-42.5 transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:shadow-lg font-sans"
     >
       <Handle
         type="target"
@@ -43,50 +24,26 @@ export default function MetricNode({ data }: NodeProps<MetricNodeData>) {
       />
 
       {/* Title and change */}
-      <div style={{ 
-        fontSize: '13px',
-        fontWeight: '500',
-        color: '#374151',
-        marginBottom: '5px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        width: '100%',
-        overflow: 'hidden',
-        gap: '6px'
-      }}>
-        <span style={{
-          whiteSpace: 'nowrap',   // Keep name on one line
-          overflow: 'hidden',    // Hide the extra text
-          textOverflow: 'ellipsis', // Add the "..."
-          flexShrink: 1          // Let the name shrink if space is tight
-        }}>{data.metric}</span>
+      <div className="text-sm font-medium text-gray-700 mb-1 flex items-center justify-between w-full overflow-hidden gap-1.5">
+        <span className="truncate whitespace-nowrap shrink">
+          {data.metric}
+        </span>
         {data.mom_change !== undefined && (
-          <span style={{
-            fontSize: '12px',
-            fontWeight: '600',
-            marginRight: '4px',
-            color: isPositive ? '#059669' : isNegative ? '#dc2626' : '#6b7280',
-            flexShrink: 0         // Prevent the percentage from ever shrinking
-          }}>
-            {isPositive ? "↑" : isNegative ? "↓" : ""}{Math.abs(data.mom_change).toFixed(2)}%
+          <span
+            className={
+              `text-xs font-semibold mr-1 ${
+                isPositive ? 'text-green-600' : isNegative ? 'text-red-600' : 'text-gray-500'
+              } shrink-0`
+            }
+          >
+            {isPositive ? '↑' : isNegative ? '↓' : ''}{Math.abs(data.mom_change).toFixed(2)}%
           </span>
         )}
       </div>
 
       {/* Value with grey background */}
       {data.nominal && (
-        <div style={{
-          fontSize: '15px',
-          fontWeight: '600',
-          color: '#111827',
-          letterSpacing: '-0.3px',
-          padding: '6px 6px',
-          borderRadius: '9px',
-          background: '#e5e7eb',
-          display: 'block',
-          textAlign: 'right',
-        }}>
+        <div className="text-base font-semibold text-gray-900 tracking-tight p-1.5 rounded-lg bg-gray-200 text-right">
           {data.nominal}
         </div>
       )}

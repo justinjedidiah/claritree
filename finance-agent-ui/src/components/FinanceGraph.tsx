@@ -107,7 +107,7 @@ function FinanceGraphInner() {
   },[]);
 
   return (
-    <div style={{ height: '600px', width: '100%' }} className="bg-gray-950 rounded-xl">
+    <div style={{ height: '600px', width: '100%' }} className="bg-white rounded-xl">
       <ReactFlow
         nodes={nodes}
         edges={edges}

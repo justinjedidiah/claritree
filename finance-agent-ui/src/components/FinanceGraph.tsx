@@ -70,15 +70,25 @@ const processNodes = (rawNodesData: any[]): Node[] => {
 }
 
 const processEdges = (rawEdgesData: any[]): Edge[] => {
-  return rawEdgesData.map(rawEdgeData => ({
-    id: rawEdgeData.id,
-    target: rawEdgeData.target,
-    source: rawEdgeData.source,
-    style: {
-      stroke: rawEdgeData.operation == '+' ? '#16a34a' : '#dc2626',
-      strokeWidth: 2
+  return rawEdgesData.map(rawEdgeData => {
+    const edgeColor = rawEdgeData.operation === '+' ? '#16a34aBF' : '#dc2626BF';
+    const arrowHeadColor = rawEdgeData.operation === '+' ? '#16a34a80' : '#dc262680';
+    return {
+      id: rawEdgeData.id,
+      target: rawEdgeData.target,
+      source: rawEdgeData.source,
+      style: {
+        stroke: edgeColor,
+        strokeWidth: 2
+      },
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        color: arrowHeadColor, 
+        width: 20,
+        height: 20,
+      },
     }
-  }))
+  })
 }
 
 const fetchInitialData = async (): Promise<{nodes: Node[], edges: Edge[]}> => {
@@ -107,7 +117,7 @@ function FinanceGraphInner() {
   },[]);
 
   return (
-    <div style={{ height: '600px', width: '100%' }} className="bg-white rounded-xl">
+    <div className="h-150 w-full bg-white rounded-xl">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -115,17 +125,7 @@ function FinanceGraphInner() {
         fitView
         minZoom={0.5}
         maxZoom={1.5}
-        defaultEdgeOptions={{
-          animated: false,
-          style: { stroke: '#7A7A73', strokeWidth: 2 },
-          markerEnd: {
-            type: MarkerType.Arrow, // Options: Arrow, ArrowClosed
-            color: '#7A7A73',             // Match your edge color
-            width: 8,
-            height: 16,
-            strokeWidth: 3
-          }
-        }}
+        // defaultEdgeOptions={defaultEdgeOptions}
       >
         <MiniMap 
           pannable 

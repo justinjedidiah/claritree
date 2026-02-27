@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -7,9 +7,14 @@ import ReactFlow, {
   MarkerType
 } from "reactflow";
 import type { Node, Edge } from "reactflow";
+import {
+  useNodesState,
+  useEdgesState,
+} from "reactflow";
 import dagre from "dagre";
 import "reactflow/dist/style.css";
 import { api } from "../api/client";
+import { useFocusStore } from "../stores/useFocusStore";
 
 import MetricNode from "./MetricNode";
 
@@ -104,9 +109,7 @@ const fetchInitialData = async (): Promise<{nodes: Node[], edges: Edge[]}> => {
 
 // ---------- COMPONENT ----------
 function FinanceGraphInner() {
-  const [nodes, setNodes] = useState<Node[]>([]);
-  const [edges, setEdges] = useState<Edge[]>([]);
-
+  // Data fetch
   useEffect(() => {
     const load = async () => {
       const data = await fetchInitialData();
@@ -116,16 +119,109 @@ function FinanceGraphInner() {
     load();
   },[]);
 
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  const pushFocus = useFocusStore((s) => s.pushFocus);
+  const clearFocus = useFocusStore((s) => s.clearFocus);
+  const currentFocus = useFocusStore((s) => s.currentFocus);
+
+  const { connectedNodeIds, connectedEdgeIds } = useMemo(() => {
+    const nodeSet = new Set<string>();
+    const edgeSet = new Set<string>();
+
+    if (currentFocus?.type === "node") {
+      const visited = new Set<string>();
+
+      const traverseUpstream = (nodeId: string) => {
+        edges.forEach((edge) => {
+          if (edge.source === nodeId) {
+            if (!visited.has(edge.target)) {
+              visited.add(edge.target);
+
+              nodeSet.add(edge.target);
+              edgeSet.add(edge.id);
+
+              traverseUpstream(edge.target);
+            }
+          }
+        });
+      };
+
+      nodeSet.add(currentFocus.id);
+      traverseUpstream(currentFocus.id);
+    }
+
+    return { connectedNodeIds: nodeSet, connectedEdgeIds: edgeSet };
+  }, [edges, currentFocus]);
+
+  const styledNodes = nodes.map((node) => {
+    const isFocused =
+      currentFocus?.type === "node" &&
+      currentFocus.id === node.id;
+
+    const isConnected = connectedNodeIds.has(node.id);
+
+    const isDimmed =
+      currentFocus &&
+      !isFocused &&
+      !isConnected;
+
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        isFocused,
+        isConnected,
+        isDimmed,
+      },
+    };
+  });
+
+  const styledEdges = edges.map((edge) => {
+    const isFocused =
+      currentFocus?.type === "edge" &&
+      currentFocus.id === edge.id;
+
+    const isConnected =
+      currentFocus?.type === "node" &&
+      connectedEdgeIds.has(edge.id);
+
+    const isDimmed =
+      currentFocus &&
+      !isFocused &&
+      !isConnected;
+
+    return {
+      ...edge,
+      animated: isFocused || isConnected,
+      style: {
+        ...edge.style,
+        opacity: isDimmed ? 0.15 : 1,
+        strokeWidth:
+          isFocused ? 4 :
+          isConnected ? 3 :
+          2,
+        filter:
+          isFocused ? "drop-shadow(0 0 6px rgba(59,130,246,0.6))" : "none",
+      },
+    };
+  });
+
   return (
-    <div className="h-150 w-full bg-white rounded-xl">
+    <div className="h-full w-full bg-white rounded-xl">
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={styledNodes}
+        edges={styledEdges}
         nodeTypes={nodeTypes}
         fitView
         minZoom={0.5}
         maxZoom={1.5}
-        // defaultEdgeOptions={defaultEdgeOptions}
+        onNodeClick={(_, node) => pushFocus({ type: "node", id: node.id })}
+        onEdgeClick={(_, edge) => pushFocus({ type: "edge", id: edge.id })}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onPaneClick={clearFocus}
       >
         <MiniMap 
           pannable 

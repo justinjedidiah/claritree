@@ -5,7 +5,6 @@ import { useFocusStore } from "../stores/useFocusStore";
 import { useEffect } from "react";
 
 export default function Dashboard() {
-  const focusStack = useFocusStore((s) => s.focusStack);
   const clearFocus = useFocusStore((s) => s.clearCurrentFocus);
 
   useEffect(() => {
@@ -23,10 +22,7 @@ export default function Dashboard() {
       {/* Left Column: Top Container + Graph */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top Container: Sits at the top of the left side */}
-        <TopContainer>
-          <p>getFocusStack: {JSON.stringify(focusStack)}</p>
-        </TopContainer>
-
+        <TopContainer />
         {/* Finance Graph: Takes up remaining space under TopContainer */}
         <div className="flex-1 relative overflow-auto">
           <FinanceGraph />

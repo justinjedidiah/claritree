@@ -15,6 +15,7 @@ import dagre from "dagre";
 import "reactflow/dist/style.css";
 import { api } from "../api/client";
 import { useFocusStore } from "../stores/useFocusStore";
+import { useDataStore } from "../stores/useDataStore";
 
 import MetricNode from "./MetricNode";
 
@@ -101,6 +102,10 @@ const fetchInitialData = async (): Promise<{nodes: Node[], edges: Edge[]}> => {
   const resEdges = await api.get("/all_formulas");
   const rawNodes = processNodes(resNodes.data.nodes);
   const edges = processEdges(resEdges.data.formulas);
+
+  // Save to store
+  useDataStore.setState({ nodesData: rawNodes.map(n => n.data) });
+  useDataStore.setState({ edgesData: edges.map(e => ({ id:e.id, source: e.source, target: e.target })) });
   return {
     nodes: layoutGraph(rawNodes, edges),
     edges: edges

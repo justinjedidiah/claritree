@@ -123,7 +123,7 @@ function FinanceGraphInner() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const pushFocus = useFocusStore((s) => s.pushFocus);
-  const clearFocus = useFocusStore((s) => s.clearFocus);
+  const clearFocus = useFocusStore((s) => s.clearCurrentFocus);
   const currentFocus = useFocusStore((s) => s.currentFocus);
 
   const { connectedNodeIds, connectedEdgeIds } = useMemo(() => {

@@ -2,9 +2,22 @@ import FinanceGraph from "../components/FinanceGraph";
 import ChatPanel from "../components/ChatPanel";
 import TopContainer from "../components/TopContainer";
 import { useFocusStore } from "../stores/useFocusStore";
+import { useEffect } from "react";
 
 export default function Dashboard() {
   const focusStack = useFocusStore((s) => s.focusStack);
+  const clearFocus = useFocusStore((s) => s.clearCurrentFocus);
+
+  useEffect(() => {
+    const handleKeyDown = (e: { key: string; }) => {
+      if (e.key === "Escape") {
+        clearFocus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [clearFocus]);
+  
   return (
     <div className="flex h-screen w-full overflow-hidden bg-gray-50">
       {/* Left Column: Top Container + Graph */}

@@ -13,6 +13,7 @@ type FocusState = {
   popFocus: () => void;
   replaceFocus: (item: FocusItem) => void;
   clearFocus: () => void;
+  clearCurrentFocus: () => void;
 };
 
 export const useFocusStore = create<FocusState>((set) => ({
@@ -21,7 +22,12 @@ export const useFocusStore = create<FocusState>((set) => ({
 
   pushFocus: (item) =>
     set((state) => {
-      const newStack = [...state.focusStack, item];
+      const isAlreadyFocused = state.focusStack.at(-1)?.id === item.id;
+      
+      const newStack = isAlreadyFocused
+        ? state.focusStack
+        : [...state.focusStack, item].slice(-5); 
+
       return {
         focusStack: newStack,
         currentFocus: newStack[newStack.length - 1],
@@ -46,6 +52,11 @@ export const useFocusStore = create<FocusState>((set) => ({
   clearFocus: () =>
     set({
       focusStack: [],
+      currentFocus: undefined,
+    }),
+
+  clearCurrentFocus: () =>
+    set({
       currentFocus: undefined,
     }),
 }));

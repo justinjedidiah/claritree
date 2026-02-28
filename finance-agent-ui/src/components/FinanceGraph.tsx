@@ -109,6 +109,13 @@ const fetchInitialData = async (): Promise<{nodes: Node[], edges: Edge[]}> => {
 
 // ---------- COMPONENT ----------
 function FinanceGraphInner() {
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  const pushFocus = useFocusStore((s) => s.pushFocus);
+  const clearFocus = useFocusStore((s) => s.clearCurrentFocus);
+  const currentFocus = useFocusStore((s) => s.currentFocus);
+
   // Data fetch
   useEffect(() => {
     const load = async () => {
@@ -119,51 +126,70 @@ function FinanceGraphInner() {
     load();
   },[]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const adjacency = useMemo(() => {
+    const map = new Map<string, { target: string; edgeId: string }[]>();
 
-  const pushFocus = useFocusStore((s) => s.pushFocus);
-  const clearFocus = useFocusStore((s) => s.clearCurrentFocus);
-  const currentFocus = useFocusStore((s) => s.currentFocus);
+    edges.forEach((edge) => {
+      if (!map.has(edge.source)) {
+        map.set(edge.source, []);
+      }
+
+      map.get(edge.source)!.push({
+        target: edge.target,
+        edgeId: edge.id,
+      });
+    });
+
+    return map;
+  }, [edges]);
 
   const { connectedNodeIds, connectedEdgeIds } = useMemo(() => {
     const nodeSet = new Set<string>();
     const edgeSet = new Set<string>();
 
-    if (currentFocus?.type === "node") {
+    if (currentFocus.length === 0) {
+      return { connectedNodeIds: nodeSet, connectedEdgeIds: edgeSet };
+    }
+
+    currentFocus.forEach((focus) => {
+      if (focus?.type !== "node") return;
+
       const visited = new Set<string>();
 
-      const traverseUpstream = (nodeId: string) => {
-        edges.forEach((edge) => {
-          if (edge.source === nodeId) {
-            if (!visited.has(edge.target)) {
-              visited.add(edge.target);
+      const traverse = (nodeId: string) => {
+        const neighbors = adjacency.get(nodeId);
+        if (!neighbors) return;
 
-              nodeSet.add(edge.target);
-              edgeSet.add(edge.id);
+        neighbors.forEach(({ target, edgeId }) => {
+          if (!visited.has(target)) {
+            visited.add(target);
 
-              traverseUpstream(edge.target);
-            }
+            nodeSet.add(target);
+            edgeSet.add(edgeId);
+
+            traverse(target);
           }
         });
       };
 
-      nodeSet.add(currentFocus.id);
-      traverseUpstream(currentFocus.id);
-    }
+      nodeSet.add(focus.id);
+      traverse(focus.id);
+    });
 
     return { connectedNodeIds: nodeSet, connectedEdgeIds: edgeSet };
-  }, [edges, currentFocus]);
+  }, [adjacency, currentFocus]);
 
   const styledNodes = nodes.map((node) => {
     const isFocused =
-      currentFocus?.type === "node" &&
-      currentFocus.id === node.id;
+      currentFocus.some(f => f.type === "node" && f.id === node.id);
+      // currentFocus?.type === "node" &&
+      // currentFocus.id === node.id;
 
     const isConnected = connectedNodeIds.has(node.id);
 
+    const hasFocus = currentFocus.length > 0;
     const isDimmed =
-      currentFocus &&
+      hasFocus &&
       !isFocused &&
       !isConnected;
 
@@ -180,15 +206,18 @@ function FinanceGraphInner() {
 
   const styledEdges = edges.map((edge) => {
     const isFocused =
-      currentFocus?.type === "edge" &&
-      currentFocus.id === edge.id;
+      currentFocus.some(f => f.type === "edge" && f.id === edge.id);
+      // currentFocus?.type === "edge" &&
+      // currentFocus.id === edge.id;
 
     const isConnected =
-      currentFocus?.type === "node" &&
+      // currentFocus?.type === "node" &&
       connectedEdgeIds.has(edge.id);
 
+    const hasFocus = currentFocus.length > 0;
+
     const isDimmed =
-      currentFocus &&
+      hasFocus &&
       !isFocused &&
       !isConnected;
 
@@ -217,8 +246,15 @@ function FinanceGraphInner() {
         fitView
         minZoom={0.5}
         maxZoom={1.5}
-        onNodeClick={(_, node) => pushFocus({ type: "node", id: node.id })}
-        onEdgeClick={(_, edge) => pushFocus({ type: "edge", id: edge.id })}
+        onNodeClick={(event, node) => {
+          const isMultiSelect = event.ctrlKey || event.metaKey;
+          pushFocus({ type: "node", id: node.id }, isMultiSelect);
+        }}
+
+        onEdgeClick={(event, edge) => {
+          const isMultiSelect = event.ctrlKey || event.metaKey;
+          pushFocus({ type: "edge", id: edge.id }, isMultiSelect);
+        }}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onPaneClick={clearFocus}

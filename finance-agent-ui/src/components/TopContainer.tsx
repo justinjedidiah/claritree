@@ -4,7 +4,19 @@ import { useDataStore } from "../stores/useDataStore";
 import NodeInfoCard from "./container-components/NodeInfoCard";
 import { ChevronDownIcon } from "@heroicons/react/24/solid";
 
-export default function TopContainer() {
+import type { DashboardProps } from "../pages/Dashboard";
+
+export default function TopContainer({
+  filters,
+  setFilters,
+  onApply,
+  filterOptions,
+}: {
+  filters: DashboardProps;
+  setFilters: React.Dispatch<React.SetStateAction<DashboardProps>>;
+  onApply: () => void;
+  filterOptions: Record<string, any>;
+}) {
   const [collapsed, setCollapsed] = useState(false);
 
   // const focusStack = useFocusStore((s) => s.focusStack);
@@ -16,9 +28,39 @@ export default function TopContainer() {
     .map((f) => nodesData.find((n) => n.metric === f.id))
     .filter(Boolean);
   
-
   return (
-    <div className="relative bg-white border-b border-gray-200 pb-6">
+    <div className={`relative bg-white border-b border-gray-200 transition-all ${
+        collapsed ? "pb-0" : "pb-6"
+      }`}
+    >
+      <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 shadow-sm px-5 py-1">
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-medium text-gray-600 leading-none">
+            Period
+          </span>
+
+          <select
+            value={filters.period}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, period: e.target.value }))
+            }
+            className="h-10 bg-gray-50 border border-gray-300 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            {filterOptions.periods?.map((periodOption: string) => (
+              <option key={periodOption} value={periodOption}>
+                {periodOption}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          onClick={onApply}
+          className="h-10 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition"
+        >
+          Apply
+        </button>
+      </div>
       {/* Content */}
       <div
         className={`transition-all duration-300 ease-in-out overflow-hidden ${
@@ -58,7 +100,7 @@ export default function TopContainer() {
           className={`
             w-5 h-5 text-gray-600
             transition-transform duration-300 ease-in-out
-            ${collapsed ? "rotate-180" : ""}
+            ${collapsed ? "" : "rotate-180"}
           `}
         />
       </button>

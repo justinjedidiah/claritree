@@ -8,6 +8,21 @@ data_router = APIRouter()
 class SQLQuery(BaseModel):
     query: str
 
+
+# ---------- UTILITY ENDPOINTS ----------
+@data_router.get("/filter_options")
+def filter_options():
+    q = "SELECT DISTINCT period FROM financials ORDER BY period DESC"
+
+    with engine.connect() as conn:
+        r = conn.execute(text(q))
+        periods = [x[0] for x in r]
+
+    return {"periods": periods}
+
+
+# ---------- DATA ENDPOINTS ----------
+
 @data_router.get("/select_by_period/{period}")
 def all_data(period: str):
     if period == 'latest':

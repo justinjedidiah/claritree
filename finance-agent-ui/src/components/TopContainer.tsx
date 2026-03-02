@@ -44,7 +44,7 @@ export default function TopContainer({
             onChange={(e) =>
               setFilters((prev) => ({ ...prev, period: e.target.value }))
             }
-            className="h-10 bg-gray-50 border border-gray-300 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="h-8 bg-gray-50 border border-gray-300 rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             {filterOptions.periods?.map((periodOption: string) => (
               <option key={periodOption} value={periodOption}>
@@ -56,7 +56,7 @@ export default function TopContainer({
 
         <button
           onClick={onApply}
-          className="h-10 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition"
+          className="h-8 px-5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition"
         >
           Apply
         </button>
@@ -68,11 +68,11 @@ export default function TopContainer({
         }`}
       >
         {focusedNodes.length === 0 ? (
-          <div className="px-4 py-6 text-center text-gray-400">
+          <div className="px-4 py-4 text-center text-gray-400">
             Click a node to inspect details
           </div>
         ) : (
-          <div className="px-4 py-4 flex gap-4 overflow-x-auto">
+          <div className="px-4 py-4 flex gap-1 overflow-x-auto">
             {focusedNodes.map((node, index) => (
               <NodeInfoCard key={index} node={node!} />
             ))}

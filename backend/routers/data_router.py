@@ -95,7 +95,7 @@ def metric_values(
 ):
 
     q = """
-    SELECT month, nominal, mom_change, yoy_change
+    SELECT period, nominal, mom_change, yoy_change
     FROM financials
     WHERE metric = :m
     """
@@ -103,14 +103,14 @@ def metric_values(
     params = {"m": metric}
 
     if start:
-        q += " AND month >= :s"
+        q += " AND period >= :s"
         params["s"] = start
 
     if end:
-        q += " AND month <= :e"
+        q += " AND period <= :e"
         params["e"] = end
 
-    q += " ORDER BY month"
+    q += " ORDER BY period"
 
     with engine.connect() as conn:
         r = conn.execute(text(q), params)

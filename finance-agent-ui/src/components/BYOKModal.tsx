@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { KeyIcon } from '@heroicons/react/24/outline';
 
 interface Props {
   onSave: (apiKey: string, provider: 'anthropic' | 'openai') => void;
@@ -20,8 +21,9 @@ export default function BYOKModal({ onSave }: Props) {
     <>
       <button
         onClick={() => setShow(true)}
-        className="text-xs px-3 py-1 rounded-full border border-gray-300 text-gray-500 hover:border-indigo-400 hover:text-indigo-500 transition-colors"
+        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-gray-200 text-gray-500 hover:border-indigo-400 hover:text-indigo-500 hover:bg-indigo-50 transition-all duration-150"
       >
+        <KeyIcon className="w-3 h-3" />
         Set API Key
       </button>
 

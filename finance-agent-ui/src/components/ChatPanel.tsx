@@ -39,7 +39,21 @@ export default function ChatPanel() {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading || !byok.isSet) return;
+    if (!input.trim() || isLoading) return;
+
+    if (!byok.isSet) {
+      setMessages(prev => {
+        const lastMsg = prev[prev.length - 1];
+        if (lastMsg?.sender === 'assistant' && lastMsg?.text.includes('Set API Key')) return prev;
+        return [...prev, {
+          id: Date.now(),
+          text: "To get started, you'll need to connect your API key — just hit the **Set API Key** button up top! 🔑",
+          sender: 'assistant'
+        }];
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     const newUserMessage: Message = { id: Date.now(), text: input, sender: 'user' };

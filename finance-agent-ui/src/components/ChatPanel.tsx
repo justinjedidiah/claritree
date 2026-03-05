@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { API_URL } from '../api/client';
 import ReactMarkdown from 'react-markdown';
 import { useBYOK } from '../hooks/useBYOK';
 import BYOKModal from './BYOKModal';
+import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
 
 interface Message {
   id: number;
@@ -22,10 +23,15 @@ export default function ChatPanel() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const sessionId = useRef<string>(crypto.randomUUID());
 
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const adjustHeight = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    // cap at 4 lines (~24px per line + padding)
+    el.style.height = Math.min(el.scrollHeight, 24 * 4 + 16) + 'px';
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading || !byok.isSet) return;
@@ -35,6 +41,9 @@ export default function ChatPanel() {
     const updatedMessages = [...messages, newUserMessage];
     setMessages(prev => [...prev, newUserMessage]);
     setInput('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+    };
 
     // placeholder AI message — toolCalls array will grow as tools are called
     const aiMessageId = Date.now() + 1;
@@ -143,33 +152,41 @@ export default function ChatPanel() {
   };
 
   return (
-    <div className="flex flex-col h-full w-80 border-l border-gray-200 bg-white shadow-sm">
-      <div className="p-4 border-b border-gray-100 font-semibold text-gray-700">
-        <span className="font-semibold text-gray-700">AI Analyst</span>
+    <div className="flex flex-col h-full w-full border-l border-gray-200 bg-white shadow-sm overflow-hidden">
+      
+      {/* header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
+        <span className="font-semibold text-gray-700 text-sm">AI Analyst</span>
         <BYOKModal onSave={setKey} />
       </div>
 
-      {/* Message List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* message list */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-3 min-w-0">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] p-3 rounded-lg text-sm ${
-              msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'
+            <div className={`min-w-0 max-w-[88%] px-3 py-2 rounded-xl text-sm wrap-break-word ${
+              msg.sender === 'user'
+                ? 'bg-indigo-500 text-white rounded-br-sm'
+                : 'bg-gray-100 text-gray-800 rounded-bl-sm'
             }`}>
-              {/* tool calls — shown above the text answer */}
               {msg.toolCalls && msg.toolCalls.length > 0 && (
                 <div className="mb-2 space-y-1">
                   {msg.toolCalls.map((tc, i) => (
-                    <div key={i} className="text-xs bg-yellow-50 border-l-2 border-yellow-400 px-2 py-1 rounded text-yellow-800">
+                    <div key={i} className="text-xs bg-yellow-50 border-l-2 border-yellow-400 px-2 py-1 rounded text-yellow-800 font-mono">
                       🔧 {tc.name}
                     </div>
                   ))}
                 </div>
               )}
-              {/* main answer text */}
               {msg.text
                 ? <ReactMarkdown>{msg.text}</ReactMarkdown>
-                : msg.isLoading && <span className="animate-pulse text-gray-400">Thinking...</span>
+                : msg.isLoading && (
+                    <span className="flex gap-1 items-center text-gray-400">
+                      <span className="animate-bounce [animation-delay:0ms]">·</span>
+                      <span className="animate-bounce [animation-delay:150ms]">·</span>
+                      <span className="animate-bounce [animation-delay:300ms]">·</span>
+                    </span>
+                  )
               }
             </div>
           </div>
@@ -178,22 +195,33 @@ export default function ChatPanel() {
       </div>
 
       {/* input */}
-      <div className="p-3 border-t border-gray-100 flex gap-2">
-        <input
-          className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSend()}
-          placeholder="Ask about your graph..."
-          disabled={isLoading}
-        />
-        <button
-          onClick={handleSend}
-          disabled={isLoading}
-          className="px-3 py-2 bg-indigo-500 text-white text-sm rounded-lg disabled:opacity-50"
-        >
-          Send
-        </button>
+      <div className="shrink-0 px-3 py-3 border-t border-gray-100">
+        <div className="flex items-end gap-0 border border-gray-200 rounded-xl focus-within:ring-1 focus-within:ring-indigo-400 overflow-hidden">
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            className="flex-1 min-w-0 text-sm px-3 py-2 resize-none overflow-y-auto focus:outline-none leading-6 bg-transparent"
+            style={{ maxHeight: `${24 * 4 + 16}px` }}
+            value={input}
+            onChange={e => { setInput(e.target.value); adjustHeight(); }}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="Ask about your graph..."
+            disabled={isLoading}
+          />
+          <button
+            onClick={handleSend}
+            disabled={isLoading || !input.trim()}
+            className="shrink-0 w-8 h-8 mb-1 mr-1 flex items-center justify-center rounded-lg bg-indigo-500 hover:bg-indigo-600 disabled:bg-gray-200 disabled:text-gray-400 text-white transition-colors"
+          >
+            <PaperAirplaneIcon className="w-4 h-4" />
+          </button>
+        </div>
+        <p className="text-xs text-gray-300 mt-1.5 pl-1">Shift+Enter for new line</p>
       </div>
     </div>
   );

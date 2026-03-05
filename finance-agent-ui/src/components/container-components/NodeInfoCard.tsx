@@ -1,116 +1,52 @@
 import type { NodeData } from "../../stores/useDataStore";
 
-type Props = {
-  node: NodeData;
-};
+type Props = { node: NodeData };
 
-const formatPercent = (value: number) =>
-  new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+const formatNumber = (v: number) =>
+  new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(v);
 
+const formatPercent = (v: number) =>
+  (v >= 0 ? "+" : "") +
+  new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v) + "%";
+
+const ChangeChip = ({ value }: { value: number }) => (
+  <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
+    value >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
+  }`}>
+    {formatPercent(value)}
+  </span>
+);
 
 export default function NodeInfoCard({ node }: Props) {
   return (
-    <div className="w-52 bg-white border border-gray-200 rounded-md px-3 py-2 shadow-sm shrink-0">
-      {/* Title */}
-      <div className="mb-1">
-        <h3 className="text-sm font-semibold text-gray-800 truncate">
-          {node.metric}
-        </h3>
-        <p className="text-xs text-gray-500 truncate">
-          {node.period}
-        </p>
+    <div className="w-52 shrink-0 bg-white border border-gray-100 rounded-lg px-3 py-2.5 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-150">
+      {/* header */}
+      <div className="flex items-start justify-between mb-2">
+        <div className="min-w-0">
+          <h3 className="text-sm font-bold text-gray-800 truncate capitalize">
+            {node.metric.replace(/_/g, " ")}
+          </h3>
+          <p className="text-xs text-gray-400">{node.period}</p>
+        </div>
+        <span className="text-xs text-gray-300 font-mono ml-2 shrink-0">IDR</span>
       </div>
 
-      {/* Stats */}
-      <div className="space-y-0.5 text-xs">
-        <p className="truncate">
-          Nominal:{" "}
-          <span className="font-medium text-gray-800">
-            {node.nominal}
-          </span>
-        </p>
+      {/* nominal */}
+      <p className="text-lg font-semibold text-gray-900 mb-2 tabular-nums">
+        {formatNumber(node.nominal)}
+      </p>
 
-        <p>
-          MoM:{" "}
-          <span
-            className={
-              node.mom_change >= 0
-                ? "text-green-600"
-                : "text-red-600"
-            }
-          >
-            {formatPercent(node.mom_change)}%
-          </span>
-        </p>
-
-        <p>
-          YoY:{" "}
-          <span
-            className={
-              node.yoy_change >= 0
-                ? "text-green-600"
-                : "text-red-600"
-            }
-          >
-            {formatPercent(node.yoy_change)}%
-          </span>
-        </p>
+      {/* changes */}
+      <div className="flex gap-1.5 flex-wrap">
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-gray-400">MoM</span>
+          <ChangeChip value={node.mom_change} />
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-gray-400">YoY</span>
+          <ChangeChip value={node.yoy_change} />
+        </div>
       </div>
     </div>
   );
 }
-
-// export default function NodeInfoCard({ node }: Props) {
-//   return (
-//     <div className="w-56 min-w-0 bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm flex flex-col shrink-0 justify-between overflow-hidden">
-//       {/* Title Section */}
-//       <div>
-//         <h3 className="font-semibold text-gray-800 truncate">
-//           {node.metric}
-//         </h3>
-//         <p className="text-sm text-gray-500 truncate">
-//           {node.period}
-//         </p>
-//       </div>
-
-//       {/* Stats */}
-//       <div className="mt-3 space-y-1 text-sm">
-//         <p className="truncate">
-//           Nominal:{" "}
-//           <span className="font-medium">
-//             {node.nominal}
-//           </span>
-//         </p>
-
-//         <p>
-//           MoM:{" "}
-//           <span
-//             className={
-//               node.mom_change >= 0
-//                 ? "text-green-600"
-//                 : "text-red-600"
-//             }
-//           >
-//             {formatPercent(node.mom_change)}%
-//           </span>
-//         </p>
-
-//         <p>
-//           YoY:{" "}
-//           <span
-//             className={
-//               node.yoy_change >= 0
-//                 ? "text-green-600"
-//                 : "text-red-600"
-//             }
-//           >
-//             {formatPercent(node.yoy_change)}%
-//           </span>
-//         </p>
-//       </div>
-//     </div>
-//   );
-// }

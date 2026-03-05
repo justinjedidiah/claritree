@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import { API_URL } from '../api/client';
 import ReactMarkdown from 'react-markdown';
+import { useFocusStore } from '../stores/useFocusStore';
+import type { FocusItem } from '../stores/useFocusStore';
 import { useBYOK } from '../hooks/useBYOK';
 import BYOKModal from './BYOKModal';
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
@@ -24,6 +26,9 @@ export default function ChatPanel() {
   const sessionId = useRef<string>(crypto.randomUUID());
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const pushFocus = useFocusStore((s) => s.pushFocus);
+  const clearFocus = useFocusStore((s) => s.clearCurrentFocus);
 
   const adjustHeight = () => {
     const el = textareaRef.current;
@@ -118,9 +123,14 @@ export default function ChatPanel() {
 
             case 'ui_event': {
               const payload = event.payload as { type: string; [key: string]: unknown };
-              // TODO: dispatch to your ReactFlow / card state here
-              // e.g. if (payload.type === 'highlight_node') highlightNode(payload.node_id)
-              console.log('UI event received:', payload);
+              if (payload.type === 'highlight_nodes') {
+                const metrics = payload.metrics
+                if (Array.isArray(metrics) && metrics.every(item => typeof item === 'string')) {
+                  clearFocus()
+                  const focusItems: FocusItem[] = metrics.map(metric => {return {type: 'node', id: metric}})
+                  focusItems.forEach((focusItem) => {pushFocus(focusItem, true)})
+                }
+              }
               break;
             }
 

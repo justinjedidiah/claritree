@@ -80,7 +80,11 @@ async def chat_stream(req: ChatRequest, request: Request):
 
                 # --- tool call finished ---
                 elif kind == "on_tool_end":
-                    tool_output = event["data"].get("output", {})
+                    tool_message = event["data"]["output"]  # always a ToolMessage
+                    try:
+                        tool_output = json.loads(tool_message.content)
+                    except (json.JSONDecodeError, TypeError):
+                        tool_output = {}
 
                     # check if this is a UI tool event
                     if isinstance(tool_output, dict) and tool_output.get("__ui_event__"):

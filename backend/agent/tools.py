@@ -2,6 +2,27 @@ from langchain_core.tools import tool
 from sqlalchemy import text
 from typing import Optional
 from db.db import engine
+from difflib import get_close_matches
+
+# --- helpers ---
+def resolve_metric_name(name: str) -> str:
+    """Find the closest matching metric name from the DB."""
+    with engine.connect() as conn:
+        r = conn.execute(text("SELECT DISTINCT metric FROM financials"))
+        all_metrics = [x[0] for x in r]
+    
+    # exact match first
+    if name in all_metrics:
+        return name
+    
+    # try normalizing spaces/underscores
+    normalized = name.lower().replace(" ", "_")
+    if normalized in all_metrics:
+        return normalized
+
+    # fuzzy match
+    matches = get_close_matches(normalized, all_metrics, n=1, cutoff=0.6)
+    return matches[0] if matches else name  # fall back to original if no match
 
 # --- data tools ---
 
@@ -59,6 +80,8 @@ def get_metric_children(metric: str) -> dict:
     For example, 'gross_profit' might have children 'revenue' and 'cogs'.
     Use this to understand what a metric is made of one level down.
     """
+    metric = resolve_metric_name(metric)
+
     q = """
     SELECT child_metric, operation
     FROM calculation_formulas
@@ -199,6 +222,7 @@ def highlight_nodes(metrics: list[str]) -> dict:
     color: 'yellow' | 'red' | 'green' | 'blue'
     Use this whenever you refer to a specific node so the user can see it visually.
     """
+    metrics = [resolve_metric_name(metric) for metric in metrics]
     return {"__ui_event__": True, "type": "highlight_nodes", "metrics": metrics}
 
 # @tool

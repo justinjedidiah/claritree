@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type FocusItem = {
+export type FocusItem = {
   type: "node" | "edge";
   id: string;
 };

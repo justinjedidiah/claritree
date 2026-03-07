@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { API_URL } from '../api/client';
 import ReactMarkdown from 'react-markdown';
 import { useFocusStore } from '../stores/useFocusStore';
@@ -16,20 +16,21 @@ interface Message {
 }
 
 export default function ChatPanel() {
+  // Chat related
   const [messages, setMessages] = useState<Message[]>([
     { id: 1, text: "Hello! How can I help you analyze you graph?", sender: 'assistant' }
   ]);
   const [input, setInput] = useState('');
   const { byok, setKey, authHeaders } = useBYOK();
   const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const sessionId = useRef<string>(crypto.randomUUID());
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
+  // Focus related
   const pushFocus = useFocusStore((s) => s.pushFocus);
   const clearCurrentFocus = useFocusStore((s) => s.clearCurrentFocus);
 
+  // Adjust height of text input for chat
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const adjustHeight = () => {
     const el = textareaRef.current;
     if (!el) return;
@@ -37,6 +38,12 @@ export default function ChatPanel() {
     // cap at 4 lines (~24px per line + padding)
     el.style.height = Math.min(el.scrollHeight, 24 * 4 + 16) + 'px';
   };
+
+  // Auto scroll to latest message
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;

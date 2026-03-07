@@ -7,17 +7,6 @@ from models.chat import ChatRequest
 
 chat_router = APIRouter()
 
-# one agent instance per provider/model combo would be ideal
-# but for simplicity build per request — memory is on the checkpointer not the agent
-_agents = {}
-
-# def get_agent(provider: str, api_key: str, model):
-#     # key by provider+model only — api_key can change per user
-#     key = f"{provider}_{model}"
-#     if key not in _agents:
-#         _agents[key] = build_agent(provider, api_key, model)
-#     return _agents[key]
-
 # def convert_messages(messages):
 #     """Convert frontend message format to LangChain messages."""
 #     result = []

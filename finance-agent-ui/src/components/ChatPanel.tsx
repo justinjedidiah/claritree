@@ -28,7 +28,7 @@ export default function ChatPanel() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const pushFocus = useFocusStore((s) => s.pushFocus);
-  const clearFocus = useFocusStore((s) => s.clearCurrentFocus);
+  const clearCurrentFocus = useFocusStore((s) => s.clearCurrentFocus);
 
   const adjustHeight = () => {
     const el = textareaRef.current;
@@ -139,10 +139,15 @@ export default function ChatPanel() {
               const payload = event.payload as { type: string; [key: string]: unknown };
               if (payload.type === 'highlight_nodes') {
                 const metrics = payload.metrics
-                if (Array.isArray(metrics) && metrics.every(item => typeof item === 'string')) {
-                  clearFocus()
-                  const focusItems: FocusItem[] = metrics.map(metric => {return {type: 'node', id: metric}})
-                  focusItems.forEach((focusItem) => {pushFocus(focusItem, true)})
+                let mode = payload.mode as FocusItem['mode']
+                const clearPreviousSelections = Boolean(payload.clear_previous_selections) ?? false
+                if (Array.isArray(metrics) && metrics.every(item => typeof item === 'string') && typeof mode === "string") {
+                  if (!['default', 'with_descendants', 'with_ancestors', 'with_ancestors_and_descendants'].includes(mode)) {
+                    mode = 'default'
+                  }
+                  const focusItems: FocusItem[] = metrics.map(metric => {return {type: 'node', id: metric, mode: mode}})
+                  clearPreviousSelections && clearCurrentFocus()
+                  focusItems.forEach((focusItem) => {pushFocus(focusItem, true, false)})
                 }
               }
               break;

@@ -1,7 +1,8 @@
-import { useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ReactFlow, {
   Background,
   Controls,
+  Panel,
   MiniMap,
   ReactFlowProvider,
   useNodesState,
@@ -20,9 +21,12 @@ const nodeTypes = {
 
 // ---------- COMPONENT ----------
 export default function FinanceGraph({ filters }: { filters: DashboardProps }) {
+  // Special hooks for react flow
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
+  // Focus related
+  const [selectionMode, setSelectionMode] = useState<'default' | 'with_descendants' | 'with_ancestors' | 'with_ancestors_and_descendants'>('default');
   const pushFocus = useFocusStore((s) => s.pushFocus);
   const clearFocus = useFocusStore((s) => s.clearCurrentFocus);
   const currentFocus = useFocusStore((s) => s.currentFocus);
@@ -37,21 +41,19 @@ export default function FinanceGraph({ filters }: { filters: DashboardProps }) {
     load();
   },[filters]);
 
-  const adjacency = useMemo(() => {
-    const map = new Map<string, { target: string; edgeId: string }[]>();
+  const { adjacency, reverseAdjacency } = useMemo(() => {
+    const adjacency = new Map<string, { target: string; edgeId: string }[]>();
+    const reverseAdjacency = new Map<string, { source: string; edgeId: string }[]>();
 
     edges.forEach((edge) => {
-      if (!map.has(edge.source)) {
-        map.set(edge.source, []);
-      }
+      if (!adjacency.has(edge.source)) adjacency.set(edge.source, []);
+      adjacency.get(edge.source)!.push({ target: edge.target, edgeId: edge.id });
 
-      map.get(edge.source)!.push({
-        target: edge.target,
-        edgeId: edge.id,
-      });
+      if (!reverseAdjacency.has(edge.target)) reverseAdjacency.set(edge.target, []);
+      reverseAdjacency.get(edge.target)!.push({ source: edge.source, edgeId: edge.id });
     });
 
-    return map;
+    return { adjacency, reverseAdjacency };
   }, [edges]);
 
   const { connectedNodeIds, connectedEdgeIds } = useMemo(() => {
@@ -65,30 +67,40 @@ export default function FinanceGraph({ filters }: { filters: DashboardProps }) {
     currentFocus.forEach((focus) => {
       if (focus?.type !== "node") return;
 
-      const visited = new Set<string>();
-
-      const traverse = (nodeId: string) => {
-        const neighbors = adjacency.get(nodeId);
-        if (!neighbors) return;
-
-        neighbors.forEach(({ target, edgeId }) => {
-          if (!visited.has(target)) {
-            visited.add(target);
-
-            nodeSet.add(target);
-            edgeSet.add(edgeId);
-
-            traverse(target);
-          }
-        });
+      const traverse = (nodeId: string, map: Map<string, { target?: string; source?: string; edgeId: string }[]>, direction: 'target' | 'source') => {
+        // tracks already-processed nodes to prevent infinite loops in cyclic graphs
+        const visited = new Set<string>();
+        // nodes queued for processing — start with the root node
+        const stack = [nodeId];
+        while (stack.length) {
+          const current = stack.pop()!;
+          const neighbors = map.get(current);
+          if (!neighbors) continue;
+          neighbors.forEach((n) => {
+            const next = direction === 'target' ? n.target! : n.source!;
+            if (!visited.has(next)) {
+              visited.add(next);
+              nodeSet.add(next);
+              edgeSet.add(n.edgeId);
+              stack.push(next);
+            }
+          });
+        }
       };
 
+      const mode = focus.mode ?? 'default';
       nodeSet.add(focus.id);
-      traverse(focus.id);
+      if (mode === 'with_ancestors') traverse(focus.id, adjacency, 'target');
+      else if (mode === 'with_descendants') traverse(focus.id, reverseAdjacency, 'source');
+      else if (mode === 'with_ancestors_and_descendants') {
+        traverse(focus.id, adjacency, 'target');
+        traverse(focus.id, reverseAdjacency, 'source');
+      }
+      // default: no traversal
     });
 
     return { connectedNodeIds: nodeSet, connectedEdgeIds: edgeSet };
-  }, [adjacency, currentFocus]);
+  }, [adjacency, reverseAdjacency, currentFocus]);
 
   const styledNodes = nodes.map((node) => {
     const isFocused =
@@ -160,12 +172,12 @@ export default function FinanceGraph({ filters }: { filters: DashboardProps }) {
           maxZoom={1.5}
           onNodeClick={(event, node) => {
             const isMultiSelect = event.ctrlKey || event.metaKey;
-            pushFocus({ type: "node", id: node.id }, isMultiSelect);
+            pushFocus({ type: "node", id: node.id, mode: selectionMode }, isMultiSelect);
           }}
 
           onEdgeClick={(event, edge) => {
             const isMultiSelect = event.ctrlKey || event.metaKey;
-            pushFocus({ type: "edge", id: edge.id }, isMultiSelect);
+            pushFocus({ type: "edge", id: edge.id, mode: selectionMode }, isMultiSelect);
           }}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
@@ -187,6 +199,29 @@ export default function FinanceGraph({ filters }: { filters: DashboardProps }) {
             }}
           />
           <Controls />
+          <Panel position="top-left">
+            <div className="flex flex-col gap-1 bg-white border border-gray-200 rounded-lg shadow-sm p-1.5">
+              {([
+                { value: 'default',          label: 'Node',       icon: '◉' },
+                { value: 'with_descendants', label: 'Descendants', icon: '⬇' },
+                { value: 'with_ancestors',   label: 'Ancestors',   icon: '⬆' },
+                { value: 'with_ancestors_and_descendants',   label: 'Ancestors & Descendants',   icon: '⬇⬆' },
+              ] as const).map(({ value, label, icon }) => (
+                <button
+                  key={value}
+                  onClick={() => setSelectionMode(value)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    selectionMode === value
+                      ? 'bg-indigo-500 text-white'
+                      : 'text-gray-500 hover:bg-gray-100'
+                  }`}
+                >
+                  <span>{icon}</span>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </Panel>
           <Background gap={20} size={1} color="#374151" />
         </ReactFlow>
       </div>

@@ -25,24 +25,19 @@ def resolve_metric_name(name: str) -> str:
     return matches[0] if matches else name  # fall back to original if no match
 
 # --- data tools ---
-
 @tool
-def get_data_by_period(period: str) -> dict:
+def get_all_metrics() -> dict:
     """
-    Get all financial metrics for a given period.
-    Use 'latest' to get the most recent period, or pass a specific period string e.g. '2024-01'.
-    Returns all metrics with their nominal value, MoM change, and YoY change.
+    Get a list of all available metric names in the system.
+    Use this first if you're unsure what metrics exist before calling other tools.
     """
-    if period == "latest":
-        q = "SELECT period, metric, nominal, mom_change, yoy_change FROM financials WHERE period = (SELECT MAX(period) FROM financials)"
-    else:
-        q = "SELECT period, metric, nominal, mom_change, yoy_change FROM financials WHERE period = :period"
+    q = "SELECT DISTINCT metric FROM financials"
 
     with engine.connect() as conn:
-        r = conn.execute(text(q), {"period": period})
-        rows = [dict(x._mapping) for x in r]
+        r = conn.execute(text(q))
+        rows = [x[0] for x in r]
 
-    return {"nodes": rows}
+    return {"metrics": rows}
 
 @tool
 def get_all_formulas() -> dict:
@@ -60,59 +55,6 @@ def get_all_formulas() -> dict:
     return {"formulas": rows}
 
 @tool
-def get_all_metrics() -> dict:
-    """
-    Get a list of all available metric names in the system.
-    Use this first if you're unsure what metrics exist before calling other tools.
-    """
-    q = "SELECT DISTINCT metric FROM financials"
-
-    with engine.connect() as conn:
-        r = conn.execute(text(q))
-        rows = [x[0] for x in r]
-
-    return {"metrics": rows}
-
-@tool
-def get_metric_children(metric: str) -> dict:
-    """
-    Get the direct children (components) of a metric in the calculation tree.
-    For example, 'gross_profit' might have children 'revenue' and 'cogs'.
-    Use this to understand what a metric is made of one level down.
-    """
-    metric = resolve_metric_name(metric)
-
-    q = """
-    SELECT child_metric, operation
-    FROM calculation_formulas
-    WHERE parent_metric = :m
-    """
-
-    with engine.connect() as conn:
-        r = conn.execute(text(q), {"m": metric})
-        rows = [dict(x._mapping) for x in r]
-
-    return {"children": rows}
-
-@tool
-def get_metric_parents(metric: str) -> dict:
-    """
-    Get the direct parents of a metric — which metrics depend on this one.
-    Use this to understand the upstream impact of a metric.
-    """
-    q = """
-    SELECT parent_metric
-    FROM calculation_formulas
-    WHERE child_metric = :m
-    """
-
-    with engine.connect() as conn:
-        r = conn.execute(text(q), {"m": metric})
-        rows = [dict(x._mapping) for x in r]
-
-    return {"parents": rows}
-
-@tool
 def get_metric_values(metric: str, start: Optional[str] = None, end: Optional[str] = None) -> dict:
     """
     Get historical values for a specific metric over time.
@@ -120,6 +62,7 @@ def get_metric_values(metric: str, start: Optional[str] = None, end: Optional[st
     Returns nominal value, MoM change, and YoY change per period.
     Use this when the user asks about trends, growth, or performance over time.
     """
+    metric = resolve_metric_name(metric)
     q = """
     SELECT period, nominal, mom_change, yoy_change
     FROM financials
@@ -143,87 +86,229 @@ def get_metric_values(metric: str, start: Optional[str] = None, end: Optional[st
     return {"values": rows}
 
 @tool
-def get_metric_descendants(metric: str) -> dict:
+def get_metric_components(metric: str, depth: str = "direct", period: str = "latest") -> dict:
     """
-    Recursively get all descendants of a metric in the calculation tree — all levels deep.
-    Returns each descendant with its depth level.
-    Use this for a full breakdown of what ultimately makes up a metric.
+    Get metrics that builds the metric — what makes up its value.
+    Use this when the user asks: 'what makes up X', 'what drives X', 'what contributes to X',
+    'what are the inputs to X', 'what affects X', 'what is X made of', what is downstream of X,
+    'what contributes the most to X', 'which component is largest in X'.
+
+    - depth='direct': immediate inputs only (one level down)
+    - depth='all': all inputs recursively (all levels deep)
+    - period: which period to fetch values for (default 'latest'), you can use patterns in SQL e.g. "2024-__" or directly "2024-03".
+
+    if asked in a specific year use period = "yyyy-__" e.g. "2023-__" this will match 2023 jan to dec
+
+    The response includes the period and each component's nominal value, MoM change, and YoY change — always reference the period and these numbers in your answer.
+    IMPORTANT: After calling this tool, call highlight_nodes with mode='with_descendants'.
     """
-    q = """
-    WITH RECURSIVE metric_tree AS (
-        SELECT parent_metric, child_metric, operation, 1 as depth
+    metric = resolve_metric_name(metric)
+
+    if depth == "direct":
+        q = """
+        SELECT child_metric as component, operation
         FROM calculation_formulas
         WHERE parent_metric = :metric
+        """
+        with engine.connect() as conn:
+            r = conn.execute(text(q), {"metric": metric})
+            tree_rows = [dict(x._mapping) for x in r]
+        components = [r["component"] for r in tree_rows]
+    else:
+        q = """
+        WITH RECURSIVE metric_tree AS (
+            SELECT
+                child_metric AS component,
+                parent_metric,
+                operation,
+                CASE
+                    WHEN operation = '+' THEN 1
+                    WHEN operation = '-' THEN -1
+                    ELSE 1
+                END AS cumulative_sign,
+                1 AS depth
+            FROM calculation_formulas
+            WHERE parent_metric = :metric
 
-        UNION ALL
+            UNION ALL
 
-        SELECT cf.parent_metric, cf.child_metric, cf.operation, mt.depth + 1
-        FROM calculation_formulas cf
-        JOIN metric_tree mt ON cf.parent_metric = mt.child_metric
-    )
-    SELECT * FROM metric_tree
-    """
+            SELECT
+                cf.child_metric AS component,
+                cf.parent_metric,
+                cf.operation,
+                mt.cumulative_sign * CASE
+                    WHEN cf.operation = '+' THEN 1
+                    WHEN cf.operation = '-' THEN -1
+                    ELSE 1
+                END,
+                mt.depth + 1
+            FROM calculation_formulas cf
+            JOIN metric_tree mt ON cf.parent_metric = mt.component
+        )
+        SELECT component, case when cumulative_sign = 1 then '+' else '-' end as cumulative_sign, depth FROM metric_tree
+        """
+        with engine.connect() as conn:
+            r = conn.execute(text(q), {"metric": metric})
+            tree_rows = [dict(x._mapping) for x in r]
+        components = [row["component"] for row in tree_rows]
 
-    with engine.connect() as conn:
-        r = conn.execute(text(q), {"metric": metric})
-        rows = [dict(x._mapping) for x in r]
+    # fetch values for all components in one query
+    placeholders = ",".join(f":m{i}" for i in range(len(components)))
+    params = {f"m{i}": m for i, m in enumerate(components)}
+    if period == "latest":
+        val_q = f"""
+        SELECT metric, period, nominal, mom_change, yoy_change
+        FROM financials
+        WHERE metric IN ({placeholders})
+        AND period = (SELECT MAX(period) FROM financials)
+        """
+        with engine.connect() as conn:
+            r = conn.execute(text(val_q), params)
+            values_dict = dict()
+            for row in r:
+                value_row = dict(row._mapping)
+                values_dict[value_row["metric"]] = value_row
+    else:
+        val_q = f"""
+        SELECT metric, period, nominal, mom_change, yoy_change
+        FROM financials
+        WHERE metric IN ({placeholders})
+        AND period LIKE :period
+        """
+        params["period"] = period
+        with engine.connect() as conn:
+            r = conn.execute(text(val_q), params)
+            values_dict = dict()
+            for row in r:
+                value_row = dict(row._mapping)
+                values_dict.setdefault(value_row["metric"], []).append(value_row)
 
-    return {"descendants": rows}
+    # merge values into rows
+    for row in tree_rows:
+        component = row["component"]
+        row["values"] = values_dict.get(component, {})
+
+    return {"metric": metric, "depth": depth, "period": period, "components": tree_rows}
 
 @tool
-def get_metric_impact(metric: str) -> dict:
+def get_metric_dependents(metric: str, depth: str = "direct", period: str = "latest") -> dict:
     """
-    Get the full downstream impact chain of a metric — which parent metrics it affects
-    and whether the effect is positive or negative (cumulative sign).
-    Use this when the user asks 'if X changes, what else is affected?'
+    Get metrics that are calculated from specified metric.
+    Use this when the user asks: 'what does X affect', 'what does X impact',
+    'what relies on X', 'if X changes what else changes', 'what is upstream of X'.
+
+    - depth='direct': immediate outputs only (one level up)
+    - depth='all': all outputs recursively, with cumulative impact sign (+1 or -1)
+    - period: which period to fetch values for (default 'latest'), you can use patterns in SQL e.g. "2024-__" or directly "2024-03".
+
+    if asked in a specific year use period = "yyyy-__" e.g. "2023-__" this will match 2023 jan to dec
+
+    The response includes the period and each component's nominal value, MoM change, and YoY change — always reference the period and these numbers in your answer.
+    IMPORTANT: After calling this tool, call highlight_nodes with mode='with_ancestors'.
     """
-    q = """
-    WITH RECURSIVE metric_tree AS (
-        SELECT
-            parent_metric, child_metric, operation,
-            CASE
-                WHEN operation = '+' THEN 1
-                WHEN operation = '-' THEN -1
-                ELSE 1
-            END AS cumulative_sign,
-            1 as depth
+    metric = resolve_metric_name(metric)
+
+    if depth == "direct":
+        q = """
+        SELECT parent_metric as dependent
         FROM calculation_formulas
-        WHERE parent_metric = :metric
+        WHERE child_metric = :metric
+        """
+        with engine.connect() as conn:
+            r = conn.execute(text(q), {"metric": metric})
+            tree_rows = [dict(x._mapping) for x in r]
+        dependents = [row["dependent"] for row in tree_rows]
+    else:
+        q = """
+        WITH RECURSIVE metric_tree AS (
+            SELECT
+                parent_metric as dependent,
+                child_metric,
+                operation,
+                CASE
+                    WHEN operation = '+' THEN 1
+                    WHEN operation = '-' THEN -1
+                    ELSE 1
+                END AS cumulative_sign,
+                1 as depth
+            FROM calculation_formulas
+            WHERE child_metric = :metric
 
-        UNION ALL
+            UNION ALL
 
-        SELECT
-            cf.parent_metric, cf.child_metric, cf.operation,
-            mt.cumulative_sign * CASE
-                WHEN cf.operation = '+' THEN 1
-                WHEN cf.operation = '-' THEN -1
-                ELSE 1
-            END,
-            mt.depth + 1
-        FROM calculation_formulas cf
-        JOIN metric_tree mt ON cf.parent_metric = mt.child_metric
-    )
-    SELECT child_metric, cumulative_sign, depth FROM metric_tree
-    """
+            SELECT
+                cf.parent_metric as dependent,
+                cf.child_metric,
+                cf.operation,
+                mt.cumulative_sign * CASE
+                    WHEN cf.operation = '+' THEN 1
+                    WHEN cf.operation = '-' THEN -1
+                    ELSE 1
+                END,
+                mt.depth + 1
+            FROM calculation_formulas cf
+            JOIN metric_tree mt ON cf.child_metric = mt.dependent
+        )
+        SELECT dependent, case when cumulative_sign = 1 then '+' else '-' end as cumulative_sign, depth FROM metric_tree
+        """
+        with engine.connect() as conn:
+            r = conn.execute(text(q), {"metric": metric})
+            tree_rows = [dict(x._mapping) for x in r]
+        dependents = [r["dependent"] for r in tree_rows]
 
-    with engine.connect() as conn:
-        r = conn.execute(text(q), {"metric": metric})
-        rows = [dict(x._mapping) for x in r]
+    # fetch values for all dependents in one query
+    placeholders = ",".join(f":m{i}" for i in range(len(dependents)))
+    params = {f"m{i}": m for i, m in enumerate(dependents)}
+    if period == "latest":
+        val_q = f"""
+        SELECT metric, period, nominal, mom_change, yoy_change
+        FROM financials
+        WHERE metric IN ({placeholders})
+        AND period = (SELECT MAX(period) FROM financials)
+        """
+        with engine.connect() as conn:
+            r = conn.execute(text(val_q), params)
+            values_dict = dict()
+            for row in r:
+                value_row = dict(row._mapping)
+                values_dict[value_row["metric"]] = value_row
+    else:
+        val_q = f"""
+        SELECT metric, period, nominal, mom_change, yoy_change
+        FROM financials
+        WHERE metric IN ({placeholders})
+        AND period LIKE :period
+        """
+        params["period"] = period
+        print(f"placeholders: {placeholders}")
+        print(f"params: {params}")
+        with engine.connect() as conn:
+            r = conn.execute(text(val_q), params)
+            values_dict = dict()
+            for row in r:
+                value_row = dict(row._mapping)
+                values_dict.setdefault(value_row["metric"], []).append(value_row)
 
-    return {"impact_chain": rows}
+    # merge values into rows
+    for row in tree_rows:
+        dependent = row["dependent"]
+        row["values"] = values_dict.get(dependent, {})
 
+    return {"metric": metric, "depth": depth, "period": period, "dependents": tree_rows}
 
 # --- ui tools ---
 
 @tool
-def highlight_nodes(metrics: list[str]) -> dict:
+def highlight_nodes(metrics: list[str], mode: str = 'default', clear_previous_selections: bool = False) -> dict:
     """
     Highlight nodes in the React Flow graph on the frontend.
-    color: 'yellow' | 'red' | 'green' | 'blue'
+    mode: 'default' | 'with_descendants' | 'with_ancestors' | 'with_ancestors_and_descendants'
+    clear_previous_selections: True | False
     Use this whenever you refer to a specific node so the user can see it visually.
     """
+
     metrics = [resolve_metric_name(metric) for metric in metrics]
-    return {"__ui_event__": True, "type": "highlight_nodes", "metrics": metrics}
+    return {"__ui_event__": True, "type": "highlight_nodes", "metrics": metrics, "mode": mode, "clear_previous_selections": clear_previous_selections}
 
 # @tool
 # def generate_analysis_card(title: str, content: str, card_type: str = "info") -> dict:
@@ -237,14 +322,11 @@ def highlight_nodes(metrics: list[str]) -> dict:
 
 # exports
 data_tools = [
-    get_data_by_period,
-    get_all_formulas,
     get_all_metrics,
-    get_metric_children,
-    get_metric_parents,
+    get_all_formulas,
     get_metric_values,
-    get_metric_descendants,
-    get_metric_impact,
+    get_metric_components,
+    get_metric_dependents,
 ]
 ui_tools = [
     highlight_nodes,

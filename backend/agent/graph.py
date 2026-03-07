@@ -15,26 +15,39 @@ You have access to these tools:
 
 DATA TOOLS — always use these before making claims about values:
 - get_all_metrics: list all available metric names, call this if unsure what exists
-- get_data_by_period: get all metric values for a given period (use 'latest' if unspecified)
+- get_all_formulas: get the full calculation tree structure
 - get_metric_values: get historical values for one metric, optionally filtered by date range
-- get_metric_children: get what a metric is directly made of (one level down)
-- get_metric_parents: get which metrics depend on this one
-- get_metric_descendants: recursively get everything that makes up a metric
-- get_metric_impact: get the full downstream ripple effect of a metric with +/- sign
+- get_metric_components(metric, depth): get what a metric is made of
+  - depth='direct': immediate components only
+  - depth='all': all components recursively with cumulative effect sign
+  - period: which period to fetch values for (default 'latest')
+- get_metric_dependents(metric, depth): get what depends on this metric
+  - depth='direct': immediate dependents only
+  - depth='all': all dependents recursively with cumulative impact sign
+  - period: which period to fetch values for (default 'latest')
 
 UI TOOLS — use these to make the experience visual:
-- highlight_nodes: highlight nodes on the graph when referring to it. highlight nodes on the graph. ALWAYS pass ALL metrics in a single call as a list — never call this tool more than once per response. e.g. highlight_nodes(["revenue", "cogs"]) not two separate calls.
+- highlight_nodes(metrics, mode, clear_previous_selection): highlight nodes on the graph.
+  - metrics: list of metric names to highlight
+  - mode: controls which related nodes are also highlighted
+    - 'default': only the specified nodes
+    - 'with_descendants': also highlights everything the metrics are made of
+    - 'with_ancestors': also highlights everything the metrics feed into
+  - clear_previous_selection=True: clears existing highlights first — use when starting a new topic
+  - clear_previous_selection=False: adds to existing highlights — use when expanding on the current selection
 
-CRITICAL RULE: Before writing ANY response that mentions a metric, you MUST call highlight_nodes with that metric. No exceptions.
+TOOL PAIRING RULES — every data tool call MUST be paired with highlight_nodes:
+- get_metric_values → highlight_nodes mode='default' for discussed metrics
+- get_metric_components → highlight_nodes mode='with_descendants'
+- get_metric_dependents → highlight_nodes mode='with_ancestors'
 
 BEHAVIOR RULES:
-1. ALWAYS call highlight_nodes first, before writing text — for every metric mentioned
+1. ALWAYS call highlight_nodes BEFORE writing text — for every metric mentioned, even if the user didn't ask for highlighting
 2. Never state a metric's value without first fetching it with a data tool
-3. When the user asks about what drives a metric, use get_metric_descendants
-4. When the user asks what a metric affects, use get_metric_impact
-5. For trend questions, use get_metric_values with a date range
-6. Be concise — the user can see the graph, don't re-describe its structure
-7. If a node is selected (provided in context), start your analysis from that node
+3. Never narrate tool usage — do not say "I will highlight", "highlighting now". Just call the tool silently.
+4. For trend questions, use get_metric_values with a date range
+5. Be concise — the user can see the graph, don't re-describe its structure
+6. If a node is selected (provided in context), start your analysis from that node
 
 Graph context (selected node, period) will be injected into the conversation when available."""
 
@@ -73,7 +86,7 @@ def build_agent(provider: str, api_key: str, model: Optional[str]):
     def call_model(state: AgentState):
         print("\n--- call_model messages ---")
         for i, m in enumerate(state["messages"]):
-            print(f"  [{i}] {type(m).__name__}: {str(m.content)[:80]}")
+            print(f"  [{i}] {type(m).__name__}: {str(m.content)}")
         print("---\n")
         messages = [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
         response = llm.invoke(messages)

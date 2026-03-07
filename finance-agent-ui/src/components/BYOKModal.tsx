@@ -55,19 +55,22 @@ export default function BYOKModal({ onSave }: Props) {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-gray-600">API Key</label>
-              <input
-                type="password"          // masks the key visually
-                value={apiKey}
-                onChange={e => setApiKey(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSave()}
-                placeholder={provider === 'anthropic' ? 'sk-ant-...' : 'sk-...'}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                autoComplete="off"
-                spellCheck={false}
-              />
-            </div>
+            <form onSubmit={e => { e.preventDefault(); handleSave(); }} autoComplete="off">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-600">API Key</label>
+                {/* Need hidden input to suppress warnings, because browsers expect password inputs to be with a username input */}
+                <input type="text" name="username" autoComplete="username" className="hidden" readOnly />
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={e => setApiKey(e.target.value)}
+                  placeholder={provider === 'anthropic' ? 'sk-ant-...' : 'sk-...'}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                  autoComplete="new-password"  // ← tricks browser into not autofilling
+                  spellCheck={false}
+                />
+              </div>
+            </form>
 
             <div className="flex gap-2 pt-1">
               <button

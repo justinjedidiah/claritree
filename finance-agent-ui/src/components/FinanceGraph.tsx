@@ -13,6 +13,7 @@ import { useFocusStore } from "../stores/useFocusStore";
 import MetricNode from "./MetricNode";
 import type { DashboardProps } from "../pages/Dashboard";
 import { fetchData } from "../engine/graph";
+import { CursorArrowRaysIcon, ArrowLeftIcon, ArrowRightIcon  } from "@heroicons/react/24/outline";
 
 const nodeTypes = {
   metric: MetricNode
@@ -24,6 +25,9 @@ export default function FinanceGraph({ filters }: { filters: DashboardProps }) {
   // Special hooks for react flow
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  // Hooks for react flow tool pane
+  const [showModePanel, setShowModePanel] = useState(false);
 
   // Focus related
   const [selectionMode, setSelectionMode] = useState<'default' | 'with_descendants' | 'with_ancestors' | 'with_ancestors_and_descendants'>('default');
@@ -200,26 +204,44 @@ export default function FinanceGraph({ filters }: { filters: DashboardProps }) {
           />
           <Controls />
           <Panel position="top-left">
-            <div className="flex flex-col gap-1 bg-white border border-gray-200 rounded-lg shadow-sm p-1.5">
-              {([
-                { value: 'default',          label: 'Node',       icon: '◉' },
-                { value: 'with_descendants', label: 'Descendants', icon: '⬇' },
-                { value: 'with_ancestors',   label: 'Ancestors',   icon: '⬆' },
-                { value: 'with_ancestors_and_descendants',   label: 'Ancestors & Descendants',   icon: '⬇⬆' },
-              ] as const).map(({ value, label, icon }) => (
-                <button
-                  key={value}
-                  onClick={() => setSelectionMode(value)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    selectionMode === value
-                      ? 'bg-indigo-500 text-white'
-                      : 'text-gray-500 hover:bg-gray-100'
-                  }`}
-                >
-                  <span>{icon}</span>
-                  {label}
-                </button>
-              ))}
+            <div className="flex flex-col gap-1">
+              {/* trigger button */}
+              <button
+                onClick={() => setShowModePanel(p => !p)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border shadow-sm transition-colors ${
+                  showModePanel
+                    ? 'bg-indigo-500 text-white border-indigo-500'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300'
+                }`}
+              >
+                <CursorArrowRaysIcon className="w-4 h-4" />
+                Selection Mode
+              </button>
+
+              {/* options — only shown when open */}
+              {showModePanel && (
+                <div className="flex flex-col gap-1 bg-white border border-gray-200 rounded-lg shadow-sm p-1.5">
+                  {([
+                    { value: 'default',                       label: 'Node only',              icon: '◉' },
+                    { value: 'with_descendants',              label: 'Descendants',            icon: <ArrowRightIcon className="w-4 h-4" /> },
+                    { value: 'with_ancestors',                label: 'Ancestors',              icon: <ArrowLeftIcon className="w-4 h-4" /> },
+                    { value: 'with_ancestors_and_descendants', label: 'Ancestors & Descendants', icon: '⬕' },
+                  ] as const).map(({ value, label, icon }) => (
+                    <button
+                      key={value}
+                      onClick={() => { setSelectionMode(value); setShowModePanel(false); }}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        selectionMode === value
+                          ? 'bg-indigo-500 text-white'
+                          : 'text-gray-500 hover:bg-gray-100'
+                      }`}
+                    >
+                      <span>{icon}</span>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </Panel>
           <Background gap={20} size={1} color="#374151" />

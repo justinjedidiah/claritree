@@ -64,7 +64,6 @@ export default function ChatPanel() {
     setIsLoading(true);
 
     const newUserMessage: Message = { id: Date.now(), text: input, sender: 'user' };
-    const updatedMessages = [...messages, newUserMessage];
     setMessages(prev => [...prev, newUserMessage]);
     setInput('');
     if (textareaRef.current) {
@@ -88,10 +87,7 @@ export default function ChatPanel() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
-          messages: updatedMessages.map(m => ({
-            role: m.sender === 'user' ? 'user' : 'assistant',
-            content: m.text
-          })),
+          message: { role: 'user', content: input.trim() },
           provider: byok.provider,
           session_id: sessionId.current,   // same id every message in this chat session
         })

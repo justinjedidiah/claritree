@@ -7,7 +7,7 @@ class Message(BaseModel):
     content: str
 
 class ChatRequest(BaseModel):
-    messages: List[Message]
+    message: Message
     provider: Literal["anthropic", "openai"]
     model: Optional[str] = None     # override default model per provider
     graph_context: Optional[Dict[str, Any]] = None  # selected node, current graph state etc

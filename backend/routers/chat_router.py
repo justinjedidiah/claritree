@@ -1,21 +1,11 @@
 from fastapi import APIRouter, Header, Request, HTTPException
 from fastapi.responses import StreamingResponse
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage
 import json
 from agent.graph import build_agent, AgentState
 from models.chat import ChatRequest
 
 chat_router = APIRouter()
-
-# def convert_messages(messages):
-#     """Convert frontend message format to LangChain messages."""
-#     result = []
-#     for m in messages:
-#         if m.role == "user":
-#             result.append(HumanMessage(content=m.content))
-#         elif m.role == "assistant":
-#             result.append(AIMessage(content=m.content))
-#     return result
 
 @chat_router.post("/chat/stream")
 # async def chat_stream(req: ChatRequest, api_key: str = Header(None, alias="X-API-Key")):
@@ -38,8 +28,8 @@ async def chat_stream(req: ChatRequest, request: Request):
             # including ToolMessages, so Anthropic always gets a valid message sequence
             config = {"configurable": {"thread_id": req.session_id}}
 
-            # only send the new user message — checkpointer handles the rest
-            user_content = req.messages[-1].content
+            # only receive the new user message — checkpointer handles the rest
+            user_content = req.message.content
             if req.graph_context:
                 user_content += f"\n\n[Graph context: {json.dumps(req.graph_context)}]"
 

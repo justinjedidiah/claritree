@@ -1,6 +1,6 @@
 # claritree
 
-**Live demo → [claritree.vercel.app](https://claritree.vercel.app)** *(placeholder)*
+**Live demo → [claritree.vercel.app](https://claritree.vercel.app)**
 
 An interactive financial calculation tree paired with an AI analyst. Ask questions in plain English, get answers backed by real data, and watch the relevant nodes highlight on the graph in real time.
 

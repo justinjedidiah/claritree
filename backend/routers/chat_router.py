@@ -57,9 +57,10 @@ async def chat_stream(req: ChatRequest, request: Request):
                 # --- stream text tokens to frontend ---
                 if kind == "on_chat_model_stream":
                     chunk = event["data"]["chunk"]
-                    if chunk.content:
+                    text = chunk.text()
+                    if text:
                         # plain text delta
-                        yield f"data: {json.dumps({'type': 'text_delta', 'text': chunk.content})}\n\n"
+                        yield f"data: {json.dumps({'type': 'text_delta', 'text': text})}\n\n"
 
                 # --- tool call started ---
                 elif kind == "on_tool_start":

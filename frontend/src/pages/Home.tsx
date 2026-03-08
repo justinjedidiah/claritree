@@ -301,6 +301,7 @@ function Section({ children, className = '' }: { children: React.ReactNode; clas
 // ── page ──────────────────────────────────────────────────────────────────────
 export default function Home() {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -311,21 +312,41 @@ export default function Home() {
       {/* NAV */}
       <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="text-2xl font-semibold tracking-tight text-gray-800">
+          <span className="text-2xl font-semibold tracking-tight text-gray-800 mr-4">
             clari<span className="text-indigo-500">tree</span>
           </span>
-          <div className="flex items-center gap-6 text-sm text-gray-500">
-            <a href="#features" className="hover:text-gray-900 transition-colors">Features</a>
-            <a href="#stack"    className="hover:text-gray-900 transition-colors">Stack</a>
-            <a href="#about"    className="hover:text-gray-900 transition-colors">About</a>
+          <div className="flex items-center gap-3">
+            {/* desktop links — hidden on mobile */}
+            <div className="hidden md:flex items-center gap-6 text-sm text-gray-500">
+              <a href="#features" className="hover:text-gray-900 transition-colors">Features</a>
+              <a href="#stack"    className="hover:text-gray-900 transition-colors">Stack</a>
+              <a href="#about"    className="hover:text-gray-900 transition-colors">About</a>
+            </div>
+
+            {/* open app button — always visible */}
             <button
               onClick={() => navigate('/dashboard')}
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-xs font-medium transition-colors"
+              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-xs font-medium transition-colors whitespace-nowrap shrink-0"
             >
               Open App →
             </button>
+
+            {/* hamburger — mobile only */}
+            <button
+              onClick={() => setMenuOpen(prev => !prev)}
+              className="md:hidden p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              {menuOpen ? '✕' : '☰'}
+            </button>
           </div>
         </div>
+        {menuOpen && (
+          <div className="md:hidden border-t border-gray-100 bg-white px-6 py-2 flex flex-col text-sm text-gray-600 shadow-md">
+            <a href="#features" onClick={() => setMenuOpen(false)} className="py-3 border-b border-gray-100 hover:text-indigo-500 transition-colors">Features</a>
+            <a href="#stack"    onClick={() => setMenuOpen(false)} className="py-3 border-b border-gray-100 hover:text-indigo-500 transition-colors">Stack</a>
+            <a href="#about"    onClick={() => setMenuOpen(false)} className="py-3 hover:text-indigo-500 transition-colors">About</a>
+          </div>
+        )}
       </nav>
 
       {/* HERO */}

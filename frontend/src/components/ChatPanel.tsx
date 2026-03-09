@@ -227,7 +227,7 @@ export default function ChatPanel() {
       </div>
 
       {/* input */}
-      <div className="shrink-0 px-3 py-3 border-t border-gray-100">
+      <div className="shrink-0 px-3 py-3 border-t border-gray-100 pb-safe">
         <div className="flex items-end gap-0 border border-gray-200 rounded-xl focus-within:ring-1 focus-within:ring-indigo-400 overflow-hidden">
           <textarea
             ref={textareaRef}

@@ -21,7 +21,7 @@ const nodeTypes = {
 
 
 // ---------- COMPONENT ----------
-export default function FinanceGraph({ filters }: { filters: DashboardProps }) {
+export default function FinanceGraph({ filters, isMobile }: { filters: DashboardProps; isMobile: boolean }) {
   // Special hooks for react flow
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -187,21 +187,24 @@ export default function FinanceGraph({ filters }: { filters: DashboardProps }) {
           onEdgesChange={onEdgesChange}
           onPaneClick={clearFocus}
         >
-          <MiniMap 
-            pannable 
-            zoomable
-            // This makes the 'view area' rectangle stand out
-            maskColor="rgba(255, 255, 255, 0.08)" 
-            maskStrokeColor="#6366f1" // Gives the viewport box a blue border like an IDE
-            maskStrokeWidth={4}
-            style={{
-                backgroundColor: '#030712',
-                border: '1px solid #374151',
-                // VS Code minimaps are usually tall and thin
-                width: 120,
-                height: 180, 
-            }}
-          />
+          {!isMobile && (
+            <MiniMap 
+              position="bottom-left"
+              pannable 
+              zoomable
+              // This makes the 'view area' rectangle stand out
+              maskColor="rgba(255, 255, 255, 0.08)" 
+              maskStrokeColor="#6366f1" // Gives the viewport box a blue border like an IDE
+              maskStrokeWidth={4}
+              style={{
+                  backgroundColor: '#030712',
+                  border: '1px solid #374151',
+                  // VS Code minimaps are usually tall and thin
+                  width: 120,
+                  height: 180, 
+              }}
+            />
+          )}
           <Controls />
           <Panel position="top-left">
             <div className="flex flex-col gap-1">
@@ -250,11 +253,3 @@ export default function FinanceGraph({ filters }: { filters: DashboardProps }) {
     </ReactFlowProvider>
   );
 }
-
-// export default function FinanceGraph() {
-//   return (
-//     <ReactFlowProvider>
-//       <FinanceGraphInner />
-//     </ReactFlowProvider>
-//   );
-// }

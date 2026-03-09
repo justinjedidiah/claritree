@@ -17,15 +17,15 @@ function useInView(threshold = 0.15) {
 
 // ── graph node/edge definitions ───────────────────────────────────────────────
 const NODES: Record<string, { x: number; y: number; label: string }> = {
-  profit:          { x: 30,  y: 185, label: 'Profit' },
-  gross_profit:    { x: 220, y: 130, label: 'Gross Profit' },
-  op_expense:      { x: 220, y: 290, label: 'Op. Expense' },
-  revenue:         { x: 410, y: 75,  label: 'Revenue' },
-  cogs:            { x: 410, y: 230, label: 'COGS' },
-  product_rev:     { x: 590, y: 30,  label: 'Product Rev.' },
-  service_rev:     { x: 590, y: 120, label: 'Service Rev.' },
-  material_cost:   { x: 590, y: 195, label: 'Material Cost' },
-  logistics_cost:  { x: 590, y: 285, label: 'Logistics Cost' },
+  profit:          { x: 10,  y: 145, label: 'Profit' },
+  gross_profit:    { x: 190, y: 90,  label: 'Gross Profit' },
+  op_expense:      { x: 190, y: 220, label: 'Op. Expense' },
+  revenue:         { x: 370, y: 40,  label: 'Revenue' },
+  cogs:            { x: 370, y: 190, label: 'COGS' },
+  product_rev:     { x: 550, y: 10,  label: 'Product Rev.' },
+  service_rev:     { x: 550, y: 90,  label: 'Service Rev.' },
+  material_cost:   { x: 550, y: 160, label: 'Material Cost' },
+  logistics_cost:  { x: 550, y: 240, label: 'Logistics Cost' },
 };
 
 // edges: [source (child), target (parent)] - arrow flows right to left
@@ -78,7 +78,7 @@ const SCENARIOS: Scenario[] = [
 ];
 
 // ── SVG graph ─────────────────────────────────────────────────────────────────
-const NODE_W = 140;
+const NODE_W = 110;
 const NODE_H = 54;
 
 function DemoGraph({ highlight, dimmed }: { highlight: string[]; dimmed: string[] }) {
@@ -94,7 +94,7 @@ function DemoGraph({ highlight, dimmed }: { highlight: string[]; dimmed: string[
   };
 
   return (
-    <svg viewBox="0 0 620 340" width="100%" height="100%" style={{ overflow: 'visible' }}>
+    <svg viewBox="-20 0 720 340" width="100%" height="auto" style={{ display: 'block' }}>
       {/* edges - bezier curves */}
       {EDGES.map(([src, tgt]) => {
         const s = NODES[src];
@@ -197,11 +197,11 @@ function HeroDemo() {
   return (
     <div className="mt-14 rounded-2xl border border-gray-200 shadow-xl shadow-gray-100/80 bg-white overflow-hidden">
       {/* two-column */}
-      <div className="flex flex-col lg:flex-row" style={{ minHeight: 470 }}>
+      <div className="flex flex-col lg:flex-row">
 
         {/* graph pane */}
-        <div className="flex-1 p-8 flex items-center justify-start bg-gray-50/50 border-b lg:border-b-0 lg:border-r border-gray-100">
-          <div className="w-full" style={{ maxWidth: 480 }}>
+        <div className="flex-1 p-1 flex items-center justify-start bg-gray-50/50 border-b lg:border-b-0 lg:border-r border-gray-100">
+          <div className="w-full min-w-0">
             <DemoGraph highlight={highlight} dimmed={dimmed} />
           </div>
         </div>

@@ -11,12 +11,12 @@ export interface DashboardProps {
 }
 
 // desktop (because chat is on the right, we resize only the width)
-const MIN_WIDTH = 240;
+const MIN_WIDTH = 20;
 const MAX_WIDTH = 600;
 const DEFAULT_WIDTH = 320;
 
 // mobile (since on mobile its on the bottom, we resize the height)
-const MIN_HEIGHT = 80;
+const MIN_HEIGHT = 40;
 const MAX_HEIGHT_RATIO = 0.85; // 85% of screen height
 const DEFAULT_HEIGHT = 340;
 
@@ -111,6 +111,7 @@ export default function Dashboard() {
 
     const onTouchMove = (e: TouchEvent) => {
       if (!isDragging.current) return;
+      e.preventDefault();  // stops pull-to-refresh
       if (isMobile) {
         const delta = startY.current - e.touches[0].clientY;
         setChatHeight(Math.min(maxHeight, Math.max(MIN_HEIGHT, startHeight.current + delta)));
@@ -128,7 +129,7 @@ export default function Dashboard() {
 
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onEnd);
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchmove", onTouchMove);
     window.addEventListener("touchend", onEnd);
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
@@ -139,9 +140,9 @@ export default function Dashboard() {
   }, [isMobile]);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gray-50">
+    <div className="flex h-screen w-full overflow-hidden bg-gray-50 relative">
       {/* graph takes full width — chat overlays on top */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <TopContainer
           filters={pendingFilters}
           setFilters={setPendingFilters}
@@ -150,13 +151,18 @@ export default function Dashboard() {
           applyStatus={applyStatus}
         />
         <div
-          className="flex-1 relative overflow-auto"
+          className="flex-1 relative overflow-hidden"
           // on mobile, shrink graph area so it's not hidden behind the chat sheet
           style={isMobile ? { paddingBottom: chatHeight } : undefined}
         >
-          <FinanceGraph filters={appliedFilters} />
+          <FinanceGraph filters={appliedFilters} isMobile={isMobile} />
         </div>
       </div>
+
+      {!isMobile && (
+        /* spacer to make top container not be overlapped by chat even though graph is*/
+        <div style={{ width: chatWidth }} className="shrink-0" />
+      )}
 
       {isMobile ? (
         /* ── MOBILE — bottom sheet ──────────────────────────────────────── */
@@ -170,7 +176,7 @@ export default function Dashboard() {
             onTouchStart={onMobileTouchStart}
             className="w-full h-5 flex items-center justify-center cursor-row-resize pointer-events-auto bg-white border-t border-gray-200 shrink-0"
           >
-            <div className="w-10 h-1 rounded-full bg-gray-300" />
+            <div className="w-70 h-1 rounded-full bg-gray-300" />
           </div>
 
           {/* chat panel */}
@@ -188,9 +194,9 @@ export default function Dashboard() {
           <div
             onMouseDown={onMouseDown}
             onTouchStart={onTouchStartDesktop}
-            className="w-1 h-full cursor-col-resize pointer-events-auto group flex items-center justify-center"
+            className="w-2 h-full cursor-col-resize pointer-events-auto group flex items-center justify-center"
           >
-            <div className="w-1 h-16 rounded-full bg-gray-200 group-hover:bg-indigo-400 group-active:bg-indigo-500 transition-colors duration-150" />
+            <div className="w-2 h-16 rounded-full bg-gray-200 group-hover:bg-indigo-400 group-active:bg-indigo-500 transition-colors duration-150" />
           </div>
 
           {/* chat panel */}

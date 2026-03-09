@@ -174,6 +174,7 @@ export default function Dashboard() {
           <div
             onMouseDown={onMobileMouseDown}
             onTouchStart={onMobileTouchStart}
+            style={{ touchAction: 'none' }} // prevents touch making web scrolls / refresh by scrolling down
             className="w-full h-5 flex items-center justify-center cursor-row-resize pointer-events-auto bg-white border-t border-gray-200 shrink-0"
           >
             <div className="w-70 h-1 rounded-full bg-gray-300" />
@@ -194,6 +195,7 @@ export default function Dashboard() {
           <div
             onMouseDown={onMouseDown}
             onTouchStart={onTouchStartDesktop}
+            style={{ touchAction: 'none' }} // prevents touch making web scrolls / refresh by scrolling down
             className="w-2 h-full cursor-col-resize pointer-events-auto group flex items-center justify-center"
           >
             <div className="w-2 h-16 rounded-full bg-gray-200 group-hover:bg-indigo-400 group-active:bg-indigo-500 transition-colors duration-150" />

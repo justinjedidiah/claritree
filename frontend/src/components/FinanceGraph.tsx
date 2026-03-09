@@ -13,7 +13,7 @@ import { useFocusStore } from "../stores/useFocusStore";
 import MetricNode from "./MetricNode";
 import type { DashboardProps } from "../pages/Dashboard";
 import { fetchData } from "../engine/graph";
-import { CursorArrowRaysIcon, ArrowLeftIcon, ArrowRightIcon  } from "@heroicons/react/24/outline";
+import { CursorArrowRaysIcon, ArrowLeftIcon, ArrowRightIcon, SquaresPlusIcon  } from "@heroicons/react/24/outline";
 
 const nodeTypes = {
   metric: MetricNode
@@ -28,6 +28,7 @@ export default function FinanceGraph({ filters, isMobile }: { filters: Dashboard
 
   // Hooks for react flow tool pane
   const [showModePanel, setShowModePanel] = useState(false);
+  const [multiSelect, setMultiSelect] = useState(false);
 
   // Focus related
   const [selectionMode, setSelectionMode] = useState<'default' | 'with_descendants' | 'with_ancestors' | 'with_ancestors_and_descendants'>('default');
@@ -175,12 +176,12 @@ export default function FinanceGraph({ filters, isMobile }: { filters: Dashboard
           minZoom={0.5}
           maxZoom={1.5}
           onNodeClick={(event, node) => {
-            const isMultiSelect = event.ctrlKey || event.metaKey;
+            const isMultiSelect = multiSelect || event.ctrlKey || event.metaKey;
             pushFocus({ type: "node", id: node.id, mode: selectionMode }, isMultiSelect);
           }}
 
           onEdgeClick={(event, edge) => {
-            const isMultiSelect = event.ctrlKey || event.metaKey;
+            const isMultiSelect = multiSelect || event.ctrlKey || event.metaKey;
             pushFocus({ type: "edge", id: edge.id, mode: selectionMode }, isMultiSelect);
           }}
           onNodesChange={onNodesChange}
@@ -245,6 +246,17 @@ export default function FinanceGraph({ filters, isMobile }: { filters: Dashboard
                   ))}
                 </div>
               )}
+              <button
+                onClick={() => setMultiSelect(p => !p)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border shadow-sm transition-colors ${
+                  multiSelect
+                    ? 'bg-indigo-500 text-white border-indigo-500'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300'
+                }`}
+              >
+                <SquaresPlusIcon className="w-4 h-4" />
+                Multi Select
+              </button>
             </div>
           </Panel>
           <Background gap={20} size={1} color="#374151" />

@@ -16,6 +16,28 @@ interface Message {
   isLoading?: boolean;
 }
 
+const getToolLabel = (name: string, input: unknown): string => {
+  const i = (input ?? {}) as Record<string, unknown>;
+  switch (name) {
+    case 'get_metric_values':
+      return `Fetching values for ${i.metric}${i.start_date ? ` (${i.start_date} → ${i.end_date})` : ''}`;
+    case 'get_metric_components':
+      return `Breaking down components of ${i.metric}`;
+    case 'get_metric_dependents':
+      return `Finding what ${i.metric} feeds into`;
+    case 'get_all_metrics':
+      return 'Loading available metrics';
+    case 'get_all_formulas':
+      return 'Loading calculation tree';
+    case 'highlight_nodes': {
+      const metrics = i.metrics as string[];
+      return `Highlighting ${metrics?.join(', ')}`;
+    }
+    default:
+      return name;
+  }
+};
+
 export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardProps}) {
   // Chat related
   const [messages, setMessages] = useState<Message[]>([
@@ -208,10 +230,20 @@ export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardPr
                 : 'bg-gray-100 text-gray-800 rounded-bl-sm'
             }`}>
               {msg.toolCalls && msg.toolCalls.length > 0 && (
-                <div className="mb-2 space-y-1">
+                <div className="mb-3 flex flex-col">
                   {msg.toolCalls.map((tc, i) => (
-                    <div key={i} className="text-xs bg-yellow-50 border-l-2 border-yellow-400 px-2 py-1 rounded text-yellow-800 font-mono">
-                      🔧 {tc.name}
+                    <div key={i} className="flex gap-2 mb-2 relative">
+                      {/* spine */}
+                      <div className="flex flex-col items-center shrink-0" style={{ width: 16 }}>
+                        <div className="w-2 h-2 rounded-full bg-indigo-400 mt-1 shrink-0 relative z-10" />
+                        {i < msg.toolCalls!.length - 1 && (
+                          <div className="bg-indigo-200 absolute" style={{ width: 1.5, top: 6, bottom: -13, left: 7 }} />
+                        )}
+                      </div>
+                      {/* label */}
+                      <p className="text-[11px] text-gray-500 leading-snug">
+                        {getToolLabel(tc.name, tc.input)}
+                      </p>
                     </div>
                   ))}
                 </div>

@@ -33,7 +33,7 @@ export default function TopContainer({
     <div className="relative shrink-0">
       <div
         style={{ height: collapsed ? "0" : EXPANDED_HEIGHT }}
-        className="bg-white border-b border-gray-100 transition-all duration-300 overflow-hidden"
+        className="bg-white border-b border-gray-200 transition-all duration-300 overflow-hidden"
       >
         <div className="h-full flex flex-col px-4 pt-3 pb-2 gap-2">
 
@@ -62,14 +62,14 @@ export default function TopContainer({
           </div>
 
           {/* cards row — fixed height, always occupies same space */}
-          <div className="flex-1 flex items-center overflow-hidden">
+          <div className="bg-white border-gray-100 border-2 flex-1 flex items-stretch overflow-hidden">
             {focusedNodes.length === 0 ? (
               <div className="flex items-center gap-2 text-gray-300 text-xs pl-1 select-none">
                 <span className="w-1.5 h-1.5 rounded-full bg-gray-200 inline-block" />
                 Click a node to inspect details
               </div>
             ) : (
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+              <div className="flex gap-2 pt-1 pb-1 overflow-x-auto scrollbar-thin">
                 {focusedNodes.map((node, i) => (
                   <NodeInfoCard key={i} node={node!} />
                 ))}

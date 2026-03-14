@@ -167,7 +167,7 @@ export default function FinanceGraph({ filters, isMobile }: { filters: Dashboard
 
   return (
     <ReactFlowProvider>
-      <div className="h-full w-full bg-white rounded-xl">
+      <div className="h-full w-full bg-gray-100 rounded-xl">
         <ReactFlow
           nodes={styledNodes}
           edges={styledEdges}

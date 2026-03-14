@@ -21,9 +21,9 @@ export default function MetricNode({ data }: NodeProps<MetricNodeData>) {
       className={`
         relative w-42.5 p-1.5 rounded-lg font-sans transition-all duration-200 ease-in-out
         ${data.isDimmed ? "opacity-25 scale-95" : "opacity-100"}
-        ${data.isFocused ? "scale-105 shadow-xl ring-2 ring-blue-500 bg-blue-50" : ""}
-        ${data.isConnected && !data.isFocused ? "shadow-md bg-blue-500/5" : ""}
-        ${!data.isFocused && !data.isConnected ? "bg-blue-500/10 border border-blue-500/20 shadow-sm" : ""}
+        ${data.isFocused ? "scale-105 shadow-xl ring-2 ring-blue-500 bg-white" : ""}
+        ${data.isConnected && !data.isFocused ? "shadow-md bg-white ring-blue-300 ring-1" : ""}
+        ${!data.isFocused && !data.isConnected ? "bg-indigo-100 border border-blue-50 shadow-sm" : ""}
       `}
       // className="bg-blue-500/10 backdrop-blur-md text-gray-800 p-1.5 rounded-lg border border-blue-500/20 shadow-sm w-42.5 transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:shadow-lg font-sans"
     >
@@ -54,7 +54,7 @@ export default function MetricNode({ data }: NodeProps<MetricNodeData>) {
 
       {/* Value with grey background */}
       {data.nominal && (
-        <div className="text-base font-semibold text-gray-900 tracking-tight p-1.5 rounded-lg bg-gray-200 text-right">
+        <div className="text-base font-semibold text-gray-900 tracking-tight p-1.5 rounded-lg bg-gray-100 text-right">
           {data.nominal}
         </div>
       )}

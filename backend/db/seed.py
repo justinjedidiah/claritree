@@ -1,266 +1,289 @@
+import random
 from sqlalchemy import text
 from db import engine
 
-sql_statements = ["""
-DELETE FROM financials;
-""","""
-DELETE FROM leaf_nodes;
-""","""
-DELETE FROM calculation_formulas;
-""","""
+# ── helpers ───────────────────────────────────────────────────────────────────
+
+def gen_periods(start_year, start_month, end_year, end_month):
+    """Generate list of 'YYYY-MM' strings inclusive."""
+    periods = []
+    y, m = start_year, start_month
+    while (y, m) <= (end_year, end_month):
+        periods.append(f"{y:04d}-{m:02d}")
+        m += 1
+        if m > 12:
+            m = 1
+            y += 1
+    return periods
+
+PERIODS = gen_periods(2023, 1, 2026, 2)
+
+# Base values for each leaf node — realistic starting points
+LEAF_BASES = {
+    # product_revenue children
+    "hardware_sales":      28000,
+    "software_licenses":   14000,
+    # service_revenue children
+    "consulting":          9000,
+    "support_contracts":   6000,
+    # material_cost children (cogs sub-level)
+    "raw_materials":       5000,
+    "packaging":           1800,
+    # logistics_cost children
+    "shipping":            3500,
+    "warehousing":         2600,
+    # ads children (marketing sub-level)
+    "digital_ads":         2800,
+    "print_ads":           1400,
+    # promotions children
+    "discounts":           1200,
+    "events":              600,
+    # salaries children (admin sub-level)
+    "engineering_salaries": 5000,
+    "ops_salaries":         4500,
+    # rent children
+    "office_rent":         2200,
+    "equipment_lease":     1200,
+}
+
+# Per-metric growth trend (monthly multiplier) + noise amplitude
+# trend > 1 = growing, < 1 = shrinking
+LEAF_TRENDS = {
+    "hardware_sales":       (1.008,  2000),
+    "software_licenses":    (1.015,  1200),
+    "consulting":           (1.005,  800),
+    "support_contracts":    (1.010,  500),
+    "raw_materials":        (1.003,  400),
+    "packaging":            (1.002,  150),
+    "shipping":             (1.004,  300),
+    "warehousing":          (1.001,  200),
+    "digital_ads":          (1.006,  400),
+    "print_ads":            (0.998,  200),   # slight decline
+    "discounts":            (1.003,  150),
+    "events":               (1.002,  100),
+    "engineering_salaries": (1.006,  300),
+    "ops_salaries":         (1.004,  250),
+    "office_rent":          (1.001,  100),
+    "equipment_lease":      (1.000,  80),
+}
+
+random.seed(42)  # reproducible
+
+def gen_leaf_values():
+    """Returns list of (period, metric, nominal) tuples."""
+    rows = []
+    for metric, base in LEAF_BASES.items():
+        trend, noise = LEAF_TRENDS[metric]
+        value = float(base)
+        for period in PERIODS:
+            # apply trend + random noise
+            value = value * trend + random.uniform(-noise, noise)
+            value = max(value, 100)  # floor — never go negative
+            rows.append((period, metric, round(value, 2)))
+    return rows
+
+
+# ── SQL ───────────────────────────────────────────────────────────────────────
+
+CLEAR = [
+    "DELETE FROM metric_reports;",
+    "DELETE FROM reports;",
+    "DELETE FROM financials;",
+    "DELETE FROM leaf_nodes;",
+    "DELETE FROM calculation_formulas;",
+]
+
+FORMULAS = """
 INSERT INTO calculation_formulas (parent_metric, child_metric, operation) VALUES
 -- profit
-('profit','gross_profit','+'),
-('profit','operating_expense','-'),
+('profit', 'gross_profit', '+'),
+('profit', 'operating_expense', '-'),
 
 -- gross profit
-('gross_profit','revenue','+'),
-('gross_profit','cogs','-'),
+('gross_profit', 'revenue', '+'),
+('gross_profit', 'cogs', '-'),
 
--- revenue
-('revenue','product_revenue','+'),
-('revenue','service_revenue','+'),
+-- revenue (depth 2)
+('revenue', 'product_revenue', '+'),
+('revenue', 'service_revenue', '+'),
 
--- cogs
-('cogs','material_cost','+'),
-('cogs','logistics_cost','+'),
+-- product_revenue (depth 3)
+('product_revenue', 'hardware_sales', '+'),
+('product_revenue', 'software_licenses', '+'),
 
--- operating expense
-('operating_expense','marketing','+'),
-('operating_expense','admin','+'),
+-- service_revenue (depth 3)
+('service_revenue', 'consulting', '+'),
+('service_revenue', 'support_contracts', '+'),
 
--- marketing
-('marketing','ads','+'),
-('marketing','promotions','+'),
+-- cogs (depth 2)
+('cogs', 'material_cost', '+'),
+('cogs', 'logistics_cost', '+'),
 
--- admin
-('admin','salaries','+'),
-('admin','rent','+');
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2023-01','product_revenue',32000),
-(NULL,'2023-01','service_revenue',13500),
-(NULL,'2023-01','material_cost',6700),
-(NULL,'2023-01','logistics_cost',5900),
-(NULL,'2023-01','ads',4000),
-(NULL,'2023-01','promotions',1700),
-(NULL,'2023-01','salaries',9000),
-(NULL,'2023-01','rent',3300);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2023-02','product_revenue',31000),
-(NULL,'2023-02','service_revenue',13500),
-(NULL,'2023-02','material_cost',7700),
-(NULL,'2023-02','logistics_cost',8900),
-(NULL,'2023-02','ads',4400),
-(NULL,'2023-02','promotions',1200),
-(NULL,'2023-02','salaries',9200),
-(NULL,'2023-02','rent',3300);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2023-03','product_revenue',29000),
-(NULL,'2023-03','service_revenue',15500),
-(NULL,'2023-03','material_cost',8200),
-(NULL,'2023-03','logistics_cost',7100),
-(NULL,'2023-03','ads',4900),
-(NULL,'2023-03','promotions',1500),
-(NULL,'2023-03','salaries',9500),
-(NULL,'2023-03','rent',3200);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2023-04','product_revenue',30000),
-(NULL,'2023-04','service_revenue',15500),
-(NULL,'2023-04','material_cost',8500),
-(NULL,'2023-04','logistics_cost',7400),
-(NULL,'2023-04','ads',5900),
-(NULL,'2023-04','promotions',1200),
-(NULL,'2023-04','salaries',9600),
-(NULL,'2023-04','rent',3400);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2023-05','product_revenue',32000),
-(NULL,'2023-05','service_revenue',16500),
-(NULL,'2023-05','material_cost',9200),
-(NULL,'2023-05','logistics_cost',7200),
-(NULL,'2023-05','ads',5500),
-(NULL,'2023-05','promotions',1500),
-(NULL,'2023-05','salaries',9200),
-(NULL,'2023-05','rent',3200);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2023-06','product_revenue',35000),
-(NULL,'2023-06','service_revenue',13500),
-(NULL,'2023-06','material_cost',10200),
-(NULL,'2023-06','logistics_cost',7200),
-(NULL,'2023-06','ads',5000),
-(NULL,'2023-06','promotions',1100),
-(NULL,'2023-06','salaries',9500),
-(NULL,'2023-06','rent',3200);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2023-07','product_revenue',37000),
-(NULL,'2023-07','service_revenue',14500),
-(NULL,'2023-07','material_cost',12200),
-(NULL,'2023-07','logistics_cost',7500),
-(NULL,'2023-07','ads',10000),
-(NULL,'2023-07','promotions',1200),
-(NULL,'2023-07','salaries',9700),
-(NULL,'2023-07','rent',3200);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2023-08','product_revenue',40000),
-(NULL,'2023-08','service_revenue',17500),
-(NULL,'2023-08','material_cost',17200),
-(NULL,'2023-08','logistics_cost',15500),
-(NULL,'2023-08','ads',15000),
-(NULL,'2023-08','promotions',1200),
-(NULL,'2023-08','salaries',9500),
-(NULL,'2023-08','rent',3450);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2023-09','product_revenue',42000),
-(NULL,'2023-09','service_revenue',20500),
-(NULL,'2023-09','material_cost',17200),
-(NULL,'2023-09','logistics_cost',15500),
-(NULL,'2023-09','ads',25000),
-(NULL,'2023-09','promotions',2500),
-(NULL,'2023-09','salaries',10500),
-(NULL,'2023-09','rent',3500);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2023-10','product_revenue',43000),
-(NULL,'2023-10','service_revenue',25500),
-(NULL,'2023-10','material_cost',15200),
-(NULL,'2023-10','logistics_cost',16500),
-(NULL,'2023-10','ads',25000),
-(NULL,'2023-10','promotions',5500),
-(NULL,'2023-10','salaries',11500),
-(NULL,'2023-10','rent',3400);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2023-11','product_revenue',45000),
-(NULL,'2023-11','service_revenue',29000),
-(NULL,'2023-11','material_cost',12800),
-(NULL,'2023-11','logistics_cost',15500),
-(NULL,'2023-11','ads',23000),
-(NULL,'2023-11','promotions',2500),
-(NULL,'2023-11','salaries',10500),
-(NULL,'2023-11','rent',4000);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2023-12','product_revenue',45000),
-(NULL,'2023-12','service_revenue',30000),
-(NULL,'2023-12','material_cost',13800),
-(NULL,'2023-12','logistics_cost',15000),
-(NULL,'2023-12','ads',23000),
-(NULL,'2023-12','promotions',4500),
-(NULL,'2023-12','salaries',15500),
-(NULL,'2023-12','rent',4100);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2024-01','product_revenue',52000),
-(NULL,'2024-01','service_revenue',38500),
-(NULL,'2024-01','material_cost',10700),
-(NULL,'2024-01','logistics_cost',8900),
-(NULL,'2024-01','ads',6400),
-(NULL,'2024-01','promotions',2700),
-(NULL,'2024-01','salaries',15000),
-(NULL,'2024-01','rent',4300);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2024-02','product_revenue',72000),
-(NULL,'2024-02','service_revenue',52000),
-(NULL,'2024-02','material_cost',8000),
-(NULL,'2024-02','logistics_cost',9500),
-(NULL,'2024-02','ads',7400),
-(NULL,'2024-02','promotions',2100),
-(NULL,'2024-02','salaries',14700),
-(NULL,'2024-02','rent',4300);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2024-03','product_revenue',82000),
-(NULL,'2024-03','service_revenue',21000),
-(NULL,'2024-03','material_cost',20500),
-(NULL,'2024-03','logistics_cost',12000),
-(NULL,'2024-03','ads',9000),
-(NULL,'2024-03','promotions',3500),
-(NULL,'2024-03','salaries',15200),
-(NULL,'2024-03','rent',5000);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2024-04','product_revenue',80000),
-(NULL,'2024-04','service_revenue',20000),
-(NULL,'2024-04','material_cost',30000),
-(NULL,'2024-04','logistics_cost',10000),
-(NULL,'2024-04','ads',8000),
-(NULL,'2024-04','promotions',4000),
-(NULL,'2024-04','salaries',15000),
-(NULL,'2024-04','rent',5000);
-""","""
-INSERT INTO leaf_nodes VALUES
-(NULL,'2024-05','product_revenue',85000),
-(NULL,'2024-05','service_revenue',22000),
-(NULL,'2024-05','material_cost',32000),
-(NULL,'2024-05','logistics_cost',11000),
-(NULL,'2024-05','ads',9000),
-(NULL,'2024-05','promotions',5000),
-(NULL,'2024-05','salaries',15500),
-(NULL,'2024-05','rent',5100);
+-- material_cost (depth 3)
+('material_cost', 'raw_materials', '+'),
+('material_cost', 'packaging', '+'),
+
+-- logistics_cost (depth 3)
+('logistics_cost', 'shipping', '+'),
+('logistics_cost', 'warehousing', '+'),
+
+-- operating_expense (depth 2)
+('operating_expense', 'marketing', '+'),
+('operating_expense', 'admin', '+'),
+
+-- marketing (depth 3)
+('marketing', 'ads', '+'),
+('marketing', 'promotions', '+'),
+
+-- ads (depth 4)
+('ads', 'digital_ads', '+'),
+('ads', 'print_ads', '+'),
+
+-- promotions (depth 4)
+('promotions', 'discounts', '+'),
+('promotions', 'events', '+'),
+
+-- admin (depth 3)
+('admin', 'salaries', '+'),
+('admin', 'rent', '+'),
+
+-- salaries (depth 4)
+('salaries', 'engineering_salaries', '+'),
+('salaries', 'ops_salaries', '+'),
+
+-- rent (depth 4)
+('rent', 'office_rent', '+'),
+('rent', 'equipment_lease', '+');
 """
-, # JUNE (anomaly month)
+
+REPORTS = """
+INSERT INTO reports (name, description) VALUES
+('P&L Summary',         'Top-level profit and loss overview'),
+('Revenue Breakdown',   'Detailed breakdown of all revenue streams'),
+('Cost Analysis',       'Breakdown of COGS and operational costs'),
+('Marketing Report',    'Marketing spend and campaign performance'),
+('HR & Admin Report',   'Salary and administrative cost tracking');
 """
-INSERT INTO leaf_nodes VALUES
-(NULL,'2024-06','product_revenue',83000),
-(NULL,'2024-06','service_revenue',21000),
-(NULL,'2024-06','material_cost',34000),
-(NULL,'2024-06','logistics_cost',12000),
-(NULL,'2024-06','ads',15000),        -- big spike
-(NULL,'2024-06','promotions',9000),  -- big spike
-(NULL,'2024-06','salaries',16000),
-(NULL,'2024-06','rent',5000);
-""","""
+
+METRIC_REPORTS = """
+INSERT INTO metric_reports (metric, report_id) VALUES
+-- P&L Summary (report 1) — top level metrics
+('profit',             1),
+('gross_profit',       1),
+('revenue',            1),
+('cogs',               1),
+('operating_expense',  1),
+
+-- Revenue Breakdown (report 2)
+('revenue',            2),
+('product_revenue',    2),
+('service_revenue',    2),
+('hardware_sales',     2),
+('software_licenses',  2),
+('consulting',         2),
+('support_contracts',  2),
+
+-- Cost Analysis (report 3)
+('cogs',               3),
+('material_cost',      3),
+('logistics_cost',     3),
+('raw_materials',      3),
+('packaging',          3),
+('shipping',           3),
+('warehousing',        3),
+('operating_expense',  3),
+
+-- Marketing Report (report 4)
+('marketing',          4),
+('ads',                4),
+('promotions',         4),
+('digital_ads',        4),
+('print_ads',          4),
+('discounts',          4),
+('events',             4),
+
+-- HR & Admin Report (report 5)
+('admin',              5),
+('salaries',           5),
+('rent',               5),
+('engineering_salaries', 5),
+('ops_salaries',       5),
+('office_rent',        5),
+('equipment_lease',    5);
+"""
+
+AGGREGATE = """
 WITH RECURSIVE calculation_tree AS (
-    SELECT ln.period, ln.metric as parent_metric, '' as child_metric, 1 as num_operation, ln.nominal
+    SELECT ln.period, ln.metric AS parent_metric, '' AS child_metric, 1 AS num_operation, ln.nominal
     FROM leaf_nodes ln
     UNION ALL
     SELECT ct.period, cf.parent_metric, cf.child_metric,
-        CASE
-            WHEN cf.operation = '+' THEN ct.num_operation
-            ELSE -ct.num_operation
-        END AS num_operation,
+        CASE WHEN cf.operation = '+' THEN ct.num_operation ELSE -ct.num_operation END AS num_operation,
         ct.nominal
     FROM calculation_formulas cf
     INNER JOIN calculation_tree ct ON cf.child_metric = ct.parent_metric
 ), aggregated AS (
-    SELECT period, parent_metric AS metric, SUM(nominal*num_operation) AS nominal, NULL as mom_change, NULL as yoy_change
+    SELECT period, parent_metric AS metric,
+           SUM(nominal * num_operation) AS nominal,
+           NULL AS mom_change,
+           NULL AS yoy_change
     FROM calculation_tree
     GROUP BY period, parent_metric
 )
 INSERT INTO financials
 SELECT NULL AS id, a.* FROM aggregated a;
-""","""
+"""
+
+UPDATE_CHANGES = """
 WITH previous AS (
-    SELECT 
+    SELECT
         curr.period, curr.metric,
         prev_m.nominal AS prev_month_nominal,
         prev_y.nominal AS prev_year_nominal
     FROM financials curr
-    LEFT JOIN financials prev_m ON prev_m.metric = curr.metric 
-         AND prev_m.period = STRFTIME('%Y-%m', curr.period || '-01', '-1 month')
-    LEFT JOIN financials prev_y ON prev_y.metric = curr.metric 
-         AND prev_y.period = STRFTIME('%Y-%m', curr.period || '-01', '-12 month')
+    LEFT JOIN financials prev_m
+        ON prev_m.metric = curr.metric
+        AND prev_m.period = STRFTIME('%Y-%m', curr.period || '-01', '-1 month')
+    LEFT JOIN financials prev_y
+        ON prev_y.metric = curr.metric
+        AND prev_y.period = STRFTIME('%Y-%m', curr.period || '-01', '-12 month')
 )
 UPDATE financials AS curr
 SET mom_change = (curr.nominal - previous.prev_month_nominal) / NULLIF(previous.prev_month_nominal, 0),
-    yoy_change = (curr.nominal - previous.prev_year_nominal) / NULLIF(previous.prev_year_nominal, 0)
+    yoy_change = (curr.nominal - previous.prev_year_nominal)  / NULLIF(previous.prev_year_nominal, 0)
 FROM previous
-WHERE curr.metric = previous.metric AND curr.period = previous.period
-;
-"""]
+WHERE curr.metric = previous.metric AND curr.period = previous.period;
+"""
+
+# ── run ───────────────────────────────────────────────────────────────────────
 
 with engine.connect() as conn:
-    for sql_statement in sql_statements:
-        conn.execute(text(sql_statement))
+
+    # clear
+    for sql in CLEAR:
+        conn.execute(text(sql))
+
+    # formulas
+    conn.execute(text(FORMULAS))
+
+    # leaf nodes — generated by Python loop
+    leaf_rows = gen_leaf_values()
+    conn.execute(
+        text("INSERT INTO leaf_nodes (period, metric, nominal) VALUES (:period, :metric, :nominal)"),
+        [{"period": p, "metric": m, "nominal": n} for p, m, n in leaf_rows]
+    )
+
+    # reports
+    conn.execute(text(REPORTS))
+    conn.execute(text(METRIC_REPORTS))
+
+    # aggregate into financials
+    conn.execute(text(AGGREGATE))
+
+    # compute mom/yoy
+    conn.execute(text(UPDATE_CHANGES))
+
     conn.commit()
 
-print("Seeded data.")
+print(f"Seeded {len(PERIODS)} periods × {len(LEAF_BASES)} leaf metrics = {len(leaf_rows)} leaf rows.")
+print(f"Reports and metric_reports populated.")

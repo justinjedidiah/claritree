@@ -6,6 +6,7 @@ import type { FocusItem } from '../stores/useFocusStore';
 import { useBYOK } from '../hooks/useBYOK';
 import BYOKModal from './BYOKModal';
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
+import type { DashboardProps } from '../pages/Dashboard';
 
 interface Message {
   id: number;
@@ -15,7 +16,7 @@ interface Message {
   isLoading?: boolean;
 }
 
-export default function ChatPanel() {
+export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardProps}) {
   // Chat related
   const [messages, setMessages] = useState<Message[]>([
     { id: 1, text: "Hello! How can I help you analyze you graph?", sender: 'assistant' }
@@ -26,6 +27,7 @@ export default function ChatPanel() {
   const sessionId = useRef<string>(crypto.randomUUID());
 
   // Focus related
+  const currentFocus = useFocusStore((s) => s.currentFocus)
   const pushFocus = useFocusStore((s) => s.pushFocus);
   const clearCurrentFocus = useFocusStore((s) => s.clearCurrentFocus);
 
@@ -89,6 +91,10 @@ export default function ChatPanel() {
         body: JSON.stringify({
           message: { role: 'user', content: input.trim() },
           provider: byok.provider,
+          graph_context: {
+            selected_nodes: currentFocus,
+            filters: appliedFilters
+          },
           session_id: sessionId.current,   // same id every message in this chat session
         })
       });

@@ -182,7 +182,7 @@ export default function Dashboard() {
 
           {/* chat panel */}
           <div className="flex-1 pointer-events-auto overflow-hidden shadow-2xl">
-            <ChatPanel />
+            <ChatPanel appliedFilters={appliedFilters} />
           </div>
         </div>
       ) : (
@@ -203,7 +203,7 @@ export default function Dashboard() {
 
           {/* chat panel */}
           <div className="flex-1 h-full pointer-events-auto shadow-2xl">
-            <ChatPanel />
+            <ChatPanel appliedFilters={appliedFilters} />
           </div>
         </div>
       )}

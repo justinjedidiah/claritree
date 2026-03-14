@@ -7,7 +7,7 @@ import { fetchFilterOptions } from "../engine/graph";
 
 export interface DashboardProps {
   period: string;
-  report: string | null;
+  report_id: number;
 }
 
 // desktop (because chat is on the right, we resize only the width)
@@ -34,7 +34,7 @@ export default function Dashboard() {
   const isMobile = useIsMobile();
   const clearFocus = useFocusStore((s) => s.clearCurrentFocus);
 
-  const [pendingFilters, setPendingFilters] = useState<DashboardProps>({ period: "latest", report: null });
+  const [pendingFilters, setPendingFilters] = useState<DashboardProps>({ period: "latest", report_id: 1 });
   const [appliedFilters, setAppliedFilters] = useState<DashboardProps>(pendingFilters);
   const [filterOptions, setFilterOptions] = useState<Record<string, any>>({ period: null });
   const [applyStatus, setApplyStatus] = useState<'idle' | 'applied'>('idle');

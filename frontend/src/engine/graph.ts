@@ -85,8 +85,9 @@ export const processEdges = (rawEdgesData: any[]): Edge[] => {
 // ---------- DATA FETCH ----------
 export const fetchData = async (filters: DashboardProps): Promise<{nodes: Node[], edges: Edge[]}> => {
   const period = filters.period ? filters.period : "latest";
-  const resNodes = await api.get(`/select_by_period/${period}`);
-  const resEdges = await api.get("/all_formulas");
+  const report_id = filters.report_id ? filters.report_id : 1;
+  const resNodes = await api.get(`/data_with_filters/${report_id}/${period}`);
+  const resEdges = await api.get(`/formulas_by_report_id/${report_id}`);
   const rawNodes = processNodes(resNodes.data.nodes);
   const edges = processEdges(resEdges.data.formulas);
 

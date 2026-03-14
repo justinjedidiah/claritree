@@ -39,6 +39,16 @@ export default function TopContainer({
 
           {/* filter bar */}
           <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Report</span>
+            <select
+              value={filters.report_id}
+              onChange={(e) => setFilters((prev) => ({ ...prev, report_id: Number(e.target.value) }))}
+              className="h-7 bg-gray-50 border border-gray-200 rounded-md px-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            >
+              {filterOptions.reports?.map((r: {id: number; name: string}) => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </select>
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Period</span>
             <select
               value={filters.period}

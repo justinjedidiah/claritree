@@ -19,16 +19,18 @@ interface Message {
 const getToolLabel = (name: string, input: unknown): string => {
   const i = (input ?? {}) as Record<string, unknown>;
   switch (name) {
+    case 'get_metrics_by_report':
+      return `Fetching metrics in "${i.report_name}"`;
+    case 'get_reports_by_metric':
+      return `Finding reports containing ${i.metric}`;
     case 'get_metric_values':
       return `Fetching values for ${i.metric}${i.start_date ? ` (${i.start_date} → ${i.end_date})` : ''}`;
     case 'get_metric_components':
       return `Breaking down components of ${i.metric}`;
     case 'get_metric_dependents':
       return `Finding what ${i.metric} feeds into`;
-    case 'get_all_metrics':
-      return 'Loading available metrics';
-    case 'get_all_formulas':
-      return 'Loading calculation tree';
+    case 'get_all_reports':
+      return 'Loading available reports';
     case 'highlight_nodes': {
       const metrics = i.metrics as string[];
       return `Highlighting ${metrics?.join(', ')}`;

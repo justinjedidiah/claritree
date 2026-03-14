@@ -4,6 +4,8 @@ from langchain_core.messages import HumanMessage
 import json
 from agent.graph import build_agent, AgentState
 from models.chat import ChatRequest
+from db.db import engine
+from sqlalchemy import text as sql_text
 
 chat_router = APIRouter()
 
@@ -31,7 +33,14 @@ async def chat_stream(req: ChatRequest, request: Request):
             # only receive the new user message — checkpointer handles the rest
             user_content = req.message.content
             if req.graph_context:
-                user_content += f"\n\n[Graph context: {json.dumps(req.graph_context)}]"
+                ctx = req.graph_context.copy()
+                if "filters" in ctx and "report_id" in ctx["filters"]:
+                    with engine.connect() as conn:
+                        r = conn.execute(sql_text("SELECT name FROM reports WHERE id = :id"), {"id": ctx["filters"]["report_id"]})
+                        row = r.fetchone()
+                        if row:
+                            ctx["filters"]["report_name"] = row[0]
+                user_content += f"\n\n[Graph context: {json.dumps(ctx)}]"
 
             new_message_state: AgentState = {
                 "messages": [HumanMessage(content=user_content)],

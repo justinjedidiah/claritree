@@ -64,7 +64,7 @@ def get_metric_values(metric: str, start: Optional[str] = None, end: Optional[st
     """
     metric = resolve_metric_name(metric)
     q = """
-    SELECT period, nominal, mom_change, yoy_change
+    SELECT period, metric, nominal, mom_change, yoy_change
     FROM financials
     WHERE metric = :m
     """

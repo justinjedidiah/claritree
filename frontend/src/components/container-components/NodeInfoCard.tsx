@@ -3,7 +3,7 @@ import type { NodeData } from "../../stores/useDataStore";
 type Props = { node: NodeData };
 
 const formatNumber = (v: number) =>
-  new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(v);
+  new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(v);
 
 const formatPercent = (v: number) =>
   (v >= 0 ? "+" : "") +

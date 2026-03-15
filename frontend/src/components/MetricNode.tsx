@@ -12,6 +12,9 @@ interface MetricNodeData {
   isDimmed?: boolean;
 }
 
+const formatNumber = (v: number) =>
+  new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(v);
+
 export default function MetricNode({ data }: NodeProps<MetricNodeData>) {
   const isPositive = data.mom_change && data.mom_change > 0;
   const isNegative = data.mom_change && data.mom_change < 0;
@@ -55,7 +58,7 @@ export default function MetricNode({ data }: NodeProps<MetricNodeData>) {
       {/* Value with grey background */}
       {data.nominal && (
         <div className="text-base font-semibold text-gray-900 tracking-tight p-1.5 rounded-lg bg-gray-100 text-right">
-          {data.nominal}
+          {formatNumber(Number(data.nominal))}
         </div>
       )}
 

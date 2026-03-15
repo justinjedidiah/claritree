@@ -5,7 +5,7 @@ import { useFocusStore } from '../stores/useFocusStore';
 import type { FocusItem } from '../stores/useFocusStore';
 import { useBYOK } from '../hooks/useBYOK';
 import BYOKModal from './BYOKModal';
-import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
+import { PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/solid';
 import type { DashboardProps } from '../pages/Dashboard';
 
 interface Message {
@@ -40,6 +40,18 @@ const getToolLabel = (name: string, input: unknown): string => {
   }
 };
 
+const MODELS = {
+  anthropic: [
+    { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5',  desc: 'Fast & affordable' },
+    { id: 'claude-sonnet-4-6',         label: 'Sonnet 4.6', desc: 'Recommended'       },
+    { id: 'claude-opus-4-6',           label: 'Opus 4.6',   desc: 'Best performance'  },
+  ],
+  openai: [
+    { id: 'gpt-5-mini',  label: 'GPT-5 Mini', desc: 'Fast & affordable' },
+    { id: 'gpt-5.4',     label: 'GPT-5.4',    desc: 'Best performance'  },
+  ],
+};
+
 export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardProps}) {
   // Chat related
   const [messages, setMessages] = useState<Message[]>([
@@ -49,6 +61,15 @@ export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardPr
   const { byok, setKey, authHeaders } = useBYOK();
   const [isLoading, setIsLoading] = useState(false);
   const sessionId = useRef<string>(crypto.randomUUID());
+
+  // Model selection
+  const [selectedModel, setSelectedModel] = useState<string>('claude-haiku-4-5-20251001');
+  useEffect(() => {
+    if (byok.isSet) {
+      const models = MODELS[byok.provider];
+      setSelectedModel(models[0].id);
+    }
+  }, [byok.provider, byok.isSet]);
 
   // Focus related
   const currentFocus = useFocusStore((s) => s.currentFocus)
@@ -115,6 +136,7 @@ export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardPr
         body: JSON.stringify({
           message: { role: 'user', content: input.trim() },
           provider: byok.provider,
+          model: selectedModel,
           graph_context: {
             selected_nodes: currentFocus,
             filters: appliedFilters
@@ -213,6 +235,11 @@ export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardPr
     }
   };
 
+  const handleClearChat = () => {
+    setMessages([{ id: 1, text: "Hello! How can I help you analyze your graph?", sender: 'assistant' }]);
+    sessionId.current = crypto.randomUUID(); // new session = fresh memory
+  };
+
   return (
     <div className="flex flex-col h-full w-full border-l border-gray-200 bg-white shadow-sm overflow-hidden">
       
@@ -264,6 +291,27 @@ export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardPr
           </div>
         ))}
         <div ref={scrollRef} />
+      </div>
+      
+      {/* toolbar — clear + model selector */}
+      <div className="shrink-0 px-3 pt-2 flex items-center justify-between gap-2">
+        <button
+          onClick={handleClearChat}
+          className="text-xs text-gray-400 hover:text-red-400 transition-colors flex items-center gap-1"
+        >
+          <TrashIcon className="w-3 h-3" />
+          Clear
+        </button>
+
+        <select
+          value={selectedModel}
+          onChange={e => setSelectedModel(e.target.value)}
+          className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+        >
+          {(byok.isSet ? MODELS[byok.provider] : [...MODELS.anthropic, ...MODELS.openai]).map(m => (
+            <option key={m.id} value={m.id}>{m.label} — {m.desc}</option>
+          ))}
+        </select>
       </div>
 
       {/* input */}

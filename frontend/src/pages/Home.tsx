@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  ShareIcon,
+  ArrowsUpDownIcon,
+  SparklesIcon,
+  KeyIcon,
+  CpuChipIcon,
+  CalendarIcon,
+} from '@heroicons/react/24/outline';
 
 // ── useInView ─────────────────────────────────────────────────────────────────
 function useInView(threshold = 0.15) {
@@ -49,7 +57,7 @@ interface Scenario {
   question: string;
   highlight: string[];
   dimmed: string[];
-  tool: string;
+  toolCalls: { tool: string; label: string }[];
   response: string;
 }
 
@@ -58,21 +66,30 @@ const SCENARIOS: Scenario[] = [
     question: `What is our gross profit in ${MONTH} ${YEAR}?`,
     highlight: ['gross_profit'],
     dimmed: ['product_rev', 'service_rev', 'material_cost', 'logistics_cost', 'op_expense'],
-    tool: 'get_data_by_period',
+    toolCalls: [
+      { tool: 'get_metric_values',  label: 'Fetching values for Gross Profit' },
+      { tool: 'highlight_nodes',    label: 'Highlighting Gross Profit' },
+    ],
     response: `Gross Profit for ${MONTH} ${YEAR} is **$58,000**.\n\nMonth-over-month it's down **−9.4%**, though year-over-year it's up **+86.5%** — a strong long-term trend despite the recent dip.`,
   },
   {
     question: 'What drives our revenue?',
     highlight: ['revenue', 'product_rev', 'service_rev'],
     dimmed: ['cogs', 'material_cost', 'logistics_cost', 'op_expense', 'profit'],
-    tool: 'get_metric_components',
+    toolCalls: [
+      { tool: 'get_metric_components', label: 'Breaking down components of Revenue' },
+      { tool: 'highlight_nodes',       label: 'Highlighting Revenue, Product Rev., Service Rev.' },
+    ],
     response: `Revenue is composed of two streams:\n\n• **Product Revenue** — $83,000 (80% of total)\n• **Service Revenue** — $21,000 (20% of total)\n\nProduct Revenue is the dominant driver. A 1% shift there moves total revenue by ~$830.`,
   },
   {
     question: 'If COGS increases, what gets affected?',
     highlight: ['cogs', 'gross_profit', 'profit'],
     dimmed: ['revenue', 'product_rev', 'service_rev', 'op_expense'],
-    tool: 'get_metric_dependents',
+    toolCalls: [
+      { tool: 'get_metric_dependents', label: 'Finding what COGS feeds into' },
+      { tool: 'highlight_nodes',       label: 'Highlighting COGS, Gross Profit, Profit' },
+    ],
     response: `COGS feeds into the following with a **negative** impact:\n\n• **Gross Profit** (direct, −1×) — every $1 increase in COGS reduces Gross Profit by $1\n• **Profit** (indirect, −1×) — the effect propagates up through Gross Profit\n\nCurrent COGS is $46,000. Watch **Material Cost** ($10,700) and **Logistics Cost** ($8,900) as the main levers.`,
   },
 ];
@@ -239,8 +256,18 @@ function HeroDemo() {
               <div className="space-y-2">
                 {/* tool badge */}
                 {phase === 'ready' && (
-                  <div className="inline-flex items-center gap-1.5 text-[10px] bg-amber-50 border-l-2 border-amber-400 px-2 py-1 rounded text-amber-700 font-mono">
-                    🔧 {scenario!.tool}
+                  <div className="mb-3 flex flex-col">
+                    {scenario!.toolCalls.map((tc, i) => (
+                      <div key={i} className="flex gap-2 mb-2 relative">
+                        <div className="flex flex-col items-center shrink-0" style={{ width: 16 }}>
+                          <div className="w-2 h-2 rounded-full bg-indigo-400 mt-1 shrink-0 relative z-10" />
+                          {i < scenario!.toolCalls.length - 1 && (
+                            <div className="bg-indigo-200 absolute" style={{ width: 1.5, top: 6, bottom: -13, left: 7 }} />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-gray-500 leading-snug">{tc.label}</p>
+                      </div>
+                    ))}
                   </div>
                 )}
                 {/* streaming text */}
@@ -270,12 +297,12 @@ function HeroDemo() {
 
 // ── static data ───────────────────────────────────────────────────────────────
 const FEATURES = [
-  { icon: '⌬', title: 'Interactive Calculation Tree',    desc: 'Navigate your reports as a live React Flow graph. Click any node and detail cards will pop up.' },
-  { icon: '↕', title: 'Ancestor & Descendant Traversal', desc: 'Four selection modes let you instantly isolate a node, everything that feeds into it, everything it affects, or both at once.' },
-  { icon: '✦', title: 'AI Assistant with Tool Calling',    desc: 'Ask in plain English. The assistant fetches real numbers, highlights relevant nodes, and surfaces insights - all in one turn.' },
-  { icon: '◈', title: 'Bring Your Own Key',              desc: 'Your API key lives only in session memory and never persisted server-side. Switch between providers freely.' },
-  { icon: '◎', title: 'Multiple AI Providers', desc: 'Connect with Anthropic or OpenAI. More providers coming soon.' },
-  { icon: '⏱', title: 'Multi-Period Analysis',           desc: "Filter any period in one click." },
+  { icon: ShareIcon, title: 'Interactive Calculation Tree',    desc: 'Navigate your reports as a live React Flow graph. Click any node and detail cards will pop up.' },
+  { icon: ArrowsUpDownIcon, title: 'Ancestor & Descendant Traversal', desc: 'Four selection modes let you instantly isolate a node, everything that feeds into it, everything it affects, or both at once.' },
+  { icon: SparklesIcon, title: 'AI Assistant with Tool Calling',    desc: 'Ask in plain English. The assistant fetches real numbers, highlights relevant nodes, and surfaces insights - all in one turn.' },
+  { icon: KeyIcon, title: 'Bring Your Own Key',              desc: 'Your API key lives only in session memory and never persisted server-side. Switch between providers freely.' },
+  { icon: CpuChipIcon, title: 'Multiple AI Providers', desc: 'Connect with Anthropic or OpenAI. More providers coming soon.' },
+  { icon: CalendarIcon, title: 'Multi-Period Analysis',           desc: "Filter any period in one click." },
 ];
 
 const STACK = [
@@ -284,7 +311,7 @@ const STACK = [
   { name: 'FastAPI',      role: 'Streaming backend',      color: '#009688' },
   { name: 'LangGraph',    role: 'Agentic AI loop',        color: '#6366f1' },
   { name: 'LangChain',    role: 'LLM abstraction',        color: '#10b981' },
-  { name: 'SQLite',       role: 'Financial data store',   color: '#f59e0b' },
+  { name: 'SQLite',       role: 'Demo financial data store',   color: '#f59e0b' },
   { name: 'Tailwind CSS', role: 'Styling',                color: '#38bdf8' },
   { name: 'Zustand',      role: 'State management',       color: '#e879f9' },
 ];
@@ -419,7 +446,7 @@ export default function Home() {
                 style={{ transitionDelay: `${i * 60}ms` }}
                 className={`transition-all duration-500 ease-out ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'} group p-5 rounded-xl border border-gray-100 bg-white hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-50`}
               >
-                <div className="text-2xl mb-3 text-indigo-400 group-hover:text-indigo-500 transition-colors">{f.icon}</div>
+                <f.icon className="w-5 h-5 text-indigo-400 group-hover:text-indigo-500 transition-colors" />
                 <h3 className="font-semibold text-gray-800 text-sm mb-2">{f.title}</h3>
                 <p className="text-gray-500 text-xs leading-relaxed">{f.desc}</p>
               </div>

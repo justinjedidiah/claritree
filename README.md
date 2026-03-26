@@ -77,30 +77,16 @@ claritree/
 
 ### Prerequisites
 
-- Python 3.11+
-- Node.js 18+
+- Python 3.13+
+- Node.js 22+
 
-### Backend
+### With Docker
 
 ```bash
-cd backend
-python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # macOS/Linux
-pip install -r requirements.txt
-uvicorn app:app --reload
+docker-compose up --build
 ```
 
 Backend runs at `http://localhost:8000`.
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
 Frontend runs at `http://localhost:5173`.
 
 ### API Key

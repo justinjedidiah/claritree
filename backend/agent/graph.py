@@ -85,10 +85,6 @@ def build_agent(provider: str, api_key: str, model: Optional[str]):
     llm = get_model(provider, api_key, model)
 
     def call_model(state: AgentState):
-        print("\n--- call_model messages ---")
-        for i, m in enumerate(state["messages"]):
-            print(f"  [{i}] {type(m).__name__}: {str(m.content)}")
-        print("---\n")
         messages = [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
         response = llm.invoke(messages)
         return {"messages": [response]}

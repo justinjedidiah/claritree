@@ -351,8 +351,6 @@ def get_metric_dependents(metric: str, depth: str = "direct", period: str = "lat
         AND period LIKE :period
         """
         params["period"] = period
-        print(f"placeholders: {placeholders}")
-        print(f"params: {params}")
         with engine.connect() as conn:
             r = conn.execute(text(val_q), params)
             values_dict = dict()

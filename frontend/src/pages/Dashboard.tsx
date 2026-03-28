@@ -177,7 +177,7 @@ export default function Dashboard() {
             style={{ touchAction: 'none' }} // prevents touch making web scrolls / refresh by scrolling down
             className="w-full h-5 flex items-center justify-center cursor-row-resize pointer-events-auto bg-white border-t border-gray-200 shrink-0"
           >
-            <div className="w-70 h-1 rounded-full bg-gray-300" />
+            <div className="w-full h-1 mx-20 rounded-full bg-gray-400" />
           </div>
 
           {/* chat panel */}

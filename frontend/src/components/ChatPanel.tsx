@@ -320,7 +320,7 @@ export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardPr
           <textarea
             ref={textareaRef}
             rows={1}
-            className="flex-1 min-w-0 text-sm px-3 py-2 resize-none overflow-y-auto focus:outline-none leading-6 bg-transparent"
+            className="flex-1 min-w-0 text-base px-3 py-2 resize-none overflow-y-auto focus:outline-none leading-6 bg-transparent"
             style={{ maxHeight: `${24 * 4 + 16}px` }}
             value={input}
             onChange={e => { setInput(e.target.value); adjustHeight(); }}
@@ -341,7 +341,6 @@ export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardPr
             <PaperAirplaneIcon className="w-4 h-4" />
           </button>
         </div>
-        <p className="text-xs text-gray-300 mt-1.5 pl-1">Shift+Enter for new line</p>
       </div>
     </div>
   );

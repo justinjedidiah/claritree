@@ -39,26 +39,33 @@ export default function TopContainer({
 
           {/* filter bar */}
           <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Report</span>
-            <select
-              value={filters.report_id}
-              onChange={(e) => setFilters((prev) => ({ ...prev, report_id: Number(e.target.value) }))}
-              className="h-7 bg-gray-50 border border-gray-200 rounded-md px-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            >
-              {filterOptions.reports?.map((r: {id: number; name: string}) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
-            </select>
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Period</span>
-            <select
-              value={filters.period}
-              onChange={(e) => setFilters((prev) => ({ ...prev, period: e.target.value }))}
-              className="h-7 bg-gray-50 border border-gray-200 rounded-md px-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            >
-              {filterOptions.periods?.map((p: string) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
+            {/* scrollable filters */}
+            <div className="relative flex-1 overflow-hidden">
+              <div className="flex items-center gap-3 overflow-x-auto scrollbar-none flex-1 border-2 border-gray-100 px-2" style={{ scrollbarWidth: 'none' }}>
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">Report</span>
+                <select
+                  value={filters.report_id}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, report_id: Number(e.target.value) }))}
+                  className="h-7 bg-gray-50 border border-gray-200 rounded-md px-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                >
+                  {filterOptions.reports?.map((r: {id: number; name: string}) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">Period</span>
+                <select
+                  value={filters.period}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, period: e.target.value }))}
+                  className="h-7 bg-gray-50 border border-gray-200 rounded-md px-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                >
+                  {filterOptions.periods?.map((p: string) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="absolute top-0 right-0 h-full w-8 bg-linear-to-l from-indigo-50 to-transparent pointer-events-none" />
+            </div>
+            {/* fixed apply button */}
             <button
               onClick={onApply}
               className={`h-7 px-4 text-xs font-semibold rounded-md transition-all duration-200 ${

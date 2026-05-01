@@ -12,7 +12,7 @@ export interface DashboardProps {
 
 // desktop (because chat is on the right, we resize only the width)
 const MIN_WIDTH = 20;
-const MAX_WIDTH = 600;
+const MAX_WIDTH_RATIO = 0.75;
 const DEFAULT_WIDTH = 320;
 
 // mobile (since on mobile its on the bottom, we resize the height)
@@ -96,6 +96,7 @@ export default function Dashboard() {
   // ── global move/end listeners ──────────────────────────────────────────────
   useEffect(() => {
     const maxHeight = window.innerHeight * MAX_HEIGHT_RATIO;
+    const maxWidth = Math.floor(window.innerWidth * MAX_WIDTH_RATIO);
 
     const onMouseMove = (e: MouseEvent) => {
       if (!isDragging.current) return;
@@ -105,7 +106,7 @@ export default function Dashboard() {
         setChatHeight(Math.min(maxHeight, Math.max(MIN_HEIGHT, startHeight.current + delta)));
       } else {
         const delta = startX.current - e.clientX;
-        setChatWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth.current + delta)));
+        setChatWidth(Math.min(maxWidth, Math.max(MIN_WIDTH, startWidth.current + delta)));
       }
     };
 
@@ -117,7 +118,7 @@ export default function Dashboard() {
         setChatHeight(Math.min(maxHeight, Math.max(MIN_HEIGHT, startHeight.current + delta)));
       } else {
         const delta = startX.current - e.touches[0].clientX;
-        setChatWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth.current + delta)));
+        setChatWidth(Math.min(maxWidth, Math.max(MIN_WIDTH, startWidth.current + delta)));
       }
     };
 

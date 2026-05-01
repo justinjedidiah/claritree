@@ -281,7 +281,7 @@ def get_metric_dependents(metric: str, depth: str = "direct", period: str = "lat
 
     if depth == "direct":
         q = """
-        SELECT parent_metric as dependent
+        SELECT parent_metric as dependent, operation
         FROM calculation_formulas
         WHERE child_metric = :metric
         """

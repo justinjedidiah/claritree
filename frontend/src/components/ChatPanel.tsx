@@ -25,7 +25,12 @@ const getToolLabel = (name: string, input: unknown): string => {
     case 'get_reports_by_metric':
       return `Finding reports containing ${i.metric}`;
     case 'get_metric_values':
-      return `Fetching values for ${i.metric}${i.start_date ? ` (${i.start_date} → ${i.end_date})` : ''}`;
+      const { metric, start, end } = i;
+      let period_text = ''
+      if (start) {
+        period_text = start === end ? ` in ${start}` : ` from ${start} to ${end}`
+      }
+      return `Fetching values for ${metric}${period_text}`;
     case 'get_metric_components':
       return `Breaking down components of ${i.metric}`;
     case 'get_metric_dependents':

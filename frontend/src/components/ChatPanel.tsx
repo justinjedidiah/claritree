@@ -6,14 +6,22 @@ import { useFocusStore } from '../stores/useFocusStore';
 import type { FocusItem } from '../stores/useFocusStore';
 import { useBYOK } from '../hooks/useBYOK';
 import BYOKModal from './BYOKModal';
-import { PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/solid';
+import { ChevronDownIcon , PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/solid';
 import type { DashboardProps } from '../pages/Dashboard';
+import { flattenToolResult, ToolResultTable, ToolResultNested } from './toolResults';
+
+interface ToolCall {
+  id: string;
+  name: string;
+  input: unknown;
+  result?: unknown;
+}
 
 interface Message {
   id: number;
   text: string;
   sender: 'user' | 'assistant';
-  toolCalls?: { name: string; input: unknown }[];
+  toolCalls?: ToolCall[];
   isLoading?: boolean;
 }
 
@@ -66,6 +74,13 @@ export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardPr
   const [input, setInput] = useState('');
   const { byok, setKey, authHeaders } = useBYOK();
   const [isLoading, setIsLoading] = useState(false);
+  const [openToolCalls, setOpenToolCalls] = useState<Set<string>>(new Set());
+  const toggleToolCall = (id: string) =>
+    setOpenToolCalls(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   const sessionId = useRef<string>(crypto.randomUUID());
 
   // Model selection
@@ -189,10 +204,9 @@ export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardPr
               break;
 
             case 'tool_calling':
-              // append a new tool call entry to the message
               updateAiMessage(msg => ({
                 ...msg,
-                toolCalls: [...(msg.toolCalls ?? []), { name: event.name as string, input: event.input }]
+                toolCalls: [...(msg.toolCalls ?? []), { id: event.run_id as string, name: event.name as string, input: event.input }]
               }));
               break;
 
@@ -215,7 +229,13 @@ export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardPr
             }
 
             case 'tool_result':
-              // ignore, we dont want to show data tables from tool calls to the user
+              const runId = event.run_id as string;
+              updateAiMessage(msg => ({
+                ...msg,
+                toolCalls: msg.toolCalls?.map(tc =>
+                  tc.id === runId ? { ...tc, result: event.result } : tc
+                ) ?? []
+              }));
               break;
 
             case 'done':
@@ -266,21 +286,40 @@ export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardPr
             }`}>
               {msg.toolCalls && msg.toolCalls.length > 0 && (
                 <div className="mb-3 flex flex-col">
-                  {msg.toolCalls.map((tc, i) => (
-                    <div key={i} className="flex gap-2 mb-2 relative">
-                      {/* spine */}
-                      <div className="flex flex-col items-center shrink-0" style={{ width: 16 }}>
-                        <div className="w-2 h-2 rounded-full bg-indigo-400 mt-1 shrink-0 relative z-10" />
-                        {i < msg.toolCalls!.length - 1 && (
-                          <div className="bg-indigo-200 absolute" style={{ width: 1.5, top: 6, bottom: -13, left: 7 }} />
-                        )}
+                  {msg.toolCalls.map((tc, i) => {
+                    const isOpen = openToolCalls.has(tc.id);
+                    const flattened = tc.result ? flattenToolResult(tc.name, tc.result) : null;
+                    return (
+                      <div key={tc.id} className="flex gap-2 mb-2 relative">
+                        {/* spine */}
+                        <div className="flex flex-col items-center shrink-0" style={{ width: 16 }}>
+                          <div className="w-2 h-2 rounded-full bg-indigo-400 mt-1 shrink-0 relative z-10" />
+                          {i < msg.toolCalls!.length - 1 && (
+                            <div className="bg-indigo-200 absolute" style={{ width: 1.5, top: 6, bottom: -13, left: 7 }} />
+                          )}
+                        </div>
+                        {/* label + result */}
+                        <div className="flex-1 min-w-0">
+                          <button
+                            onClick={() => toggleToolCall(tc.id)}
+                            className="flex items-center gap-1 w-full text-left"
+                          >
+                            <p className="text-[11px] text-gray-500 leading-snug flex-1">
+                              {getToolLabel(tc.name, tc.input)}
+                            </p>
+                            {flattened && (
+                              <ChevronDownIcon className={`w-3 h-3 text-gray-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                            )}
+                          </button>
+                          {isOpen && flattened && (
+                            flattened.type === 'table'
+                              ? <ToolResultTable rows={flattened.rows!} topMessage={flattened.topMessage} />
+                              : <ToolResultNested sections={flattened.sections!} />
+                          )}
+                        </div>
                       </div>
-                      {/* label */}
-                      <p className="text-[11px] text-gray-500 leading-snug">
-                        {getToolLabel(tc.name, tc.input)}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
               {msg.text

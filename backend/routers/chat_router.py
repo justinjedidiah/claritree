@@ -65,7 +65,7 @@ async def chat_stream(req: ChatRequest, request: Request):
                 elif kind == "on_tool_start":
                     tool_name = event["name"]
                     tool_input = event["data"].get("input", {})
-                    yield f"data: {json.dumps({'type': 'tool_calling', 'name': tool_name, 'input': tool_input})}\n\n"
+                    yield f"data: {json.dumps({'type': 'tool_calling', 'name': tool_name, 'input': tool_input, 'run_id': event['run_id']})}\n\n"
 
                 # --- tool call finished ---
                 elif kind == "on_tool_end":
@@ -77,9 +77,9 @@ async def chat_stream(req: ChatRequest, request: Request):
 
                     # check if this is a UI tool event
                     if isinstance(tool_output, dict) and tool_output.get("__ui_event__"):
-                        yield f"data: {json.dumps({'type': 'ui_event', 'payload': tool_output})}\n\n"
+                        yield f"data: {json.dumps({'type': 'ui_event', 'run_id': event['run_id'], 'payload': tool_output})}\n\n"
                     else:
-                        yield f"data: {json.dumps({'type': 'tool_result', 'result': str(tool_output)})}\n\n"
+                        yield f"data: {json.dumps({'type': 'tool_result', 'run_id': event['run_id'], 'result': tool_output})}\n\n"
 
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
         except Exception as e:

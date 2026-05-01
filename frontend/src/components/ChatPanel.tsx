@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { API_URL } from '../api/client';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useFocusStore } from '../stores/useFocusStore';
 import type { FocusItem } from '../stores/useFocusStore';
 import { useBYOK } from '../hooks/useBYOK';
@@ -278,7 +279,24 @@ export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardPr
                 </div>
               )}
               {msg.text
-                ? <ReactMarkdown>{msg.text}</ReactMarkdown>
+                ? <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      table: ({ node, ...props }) => (
+                        <div className="overflow-x-auto my-2">
+                          <table className="text-xs border-collapse w-full" {...props} />
+                        </div>
+                      ),
+                      th: ({ node, ...props }) => (
+                        <th className="border border-gray-300 bg-gray-200 px-2 py-1 text-left font-semibold" {...props} />
+                      ),
+                      td: ({ node, ...props }) => (
+                        <td className="border border-gray-300 px-2 py-1" {...props} />
+                      ),
+                    }}
+                  >
+                    {msg.text}
+                  </ReactMarkdown>
                 : msg.isLoading && (
                     <span className="flex gap-1 items-center text-gray-400">
                       <span className="animate-bounce [animation-delay:0ms]">·</span>

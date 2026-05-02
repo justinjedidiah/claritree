@@ -65,7 +65,7 @@ export default function BYOKModal({ onSave }: Props) {
                   value={apiKey}
                   onChange={e => setApiKey(e.target.value)}
                   placeholder={provider === 'anthropic' ? 'sk-ant-...' : 'sk-...'}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-1 focus:ring-indigo-400"
                   autoComplete="new-password"  // ← tricks browser into not autofilling
                   spellCheck={false}
                 />

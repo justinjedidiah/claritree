@@ -141,7 +141,7 @@ export default function Dashboard() {
   }, [isMobile]);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-gray-50 relative">
+    <div className="flex h-dvh w-full overflow-hidden bg-gray-50 relative">
       {/* graph takes full width — chat overlays on top */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <TopContainer

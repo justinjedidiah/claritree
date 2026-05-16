@@ -19,7 +19,7 @@ const ChangeChip = ({ value }: { value: number }) => (
 
 export default function NodeInfoCard({ node }: Props) {
   return (
-    <div className="w-52 shrink-0 bg-white border border-gray-100 rounded-lg px-3 py-2.5 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-150">
+    <div className="w-72 shrink-0 bg-white border border-gray-100 rounded-lg px-3 py-2.5 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-150">
       {/* header */}
       <div className="flex items-start justify-between mb-2">
         <div className="min-w-0">
@@ -33,7 +33,7 @@ export default function NodeInfoCard({ node }: Props) {
 
       {/* nominal */}
       <p className="text-lg font-semibold text-gray-900 mb-2 tabular-nums">
-        {formatNumber(node.nominal)}
+        {formatNumber(node.mtd)}
       </p>
 
       {/* changes */}
@@ -41,6 +41,10 @@ export default function NodeInfoCard({ node }: Props) {
         <div className="flex items-center gap-1">
           <span className="text-xs text-gray-400">MoM</span>
           <ChangeChip value={node.mom_change} />
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-gray-400">QoQ</span>
+          <ChangeChip value={node.qoq_change} />
         </div>
         <div className="flex items-center gap-1">
           <span className="text-xs text-gray-400">YoY</span>

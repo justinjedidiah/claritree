@@ -3,9 +3,13 @@ import type { NodeProps } from "reactflow";
 
 interface MetricNodeData {
   metric: string;
+  mtd?: number;
+  qtd?: number;
+  ytd?: number;
+  balance?: number;
   mom_change?: number;
+  qoq_change?: number;
   yoy_change?: number;
-  nominal?: string;
 
   isFocused?: boolean;
   isConnected?: boolean;
@@ -56,9 +60,9 @@ export default function MetricNode({ data }: NodeProps<MetricNodeData>) {
       </div>
 
       {/* Value with grey background */}
-      {data.nominal && (
+      {data.mtd && (
         <div className="text-base font-semibold text-gray-900 tracking-tight p-1.5 rounded-lg bg-gray-100 text-right">
-          {formatNumber(Number(data.nominal))}
+          {formatNumber(Number(data.mtd))}
         </div>
       )}
 

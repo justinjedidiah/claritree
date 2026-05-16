@@ -52,8 +52,12 @@ export const processNodes = (rawNodesData: any[]): Node[] => {
       data: {
         period: rawNodeData.period,
         metric: rawNodeData.metric,
-        nominal: rawNodeData.nominal,
+        mtd: rawNodeData.mtd,
+        qtd: rawNodeData.qtd,
+        ytd: rawNodeData.ytd,
+        balance: rawNodeData.balance,
         mom_change: rawNodeData.mom_change,
+        qoq_change: rawNodeData.qoq_change,
         yoy_change: rawNodeData.yoy_change
       },
       position: { x:0, y:0 }

@@ -3,8 +3,12 @@ import { create } from "zustand";
 export type NodeData = {
     period: string;
     metric: string;
-    nominal: number;
+    mtd: number;
+    qtd: number;
+    ytd: number;
+    balance: number;
     mom_change: number;
+    qoq_change: number;
     yoy_change: number;
 }
 

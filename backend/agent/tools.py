@@ -154,6 +154,11 @@ def get_metric_values(metric: str, start: Optional[str] = None, end: Optional[st
         r = conn.execute(text(q), params)
         rows = [dict(x._mapping) for x in r]
 
+    if not rows and not (start or end):
+        return {
+            "error": f"Metric '{metric}' not found. Use get_all_reports and get_metrics_by_report to discover available metrics."
+        }
+
     return {"values": rows}
 
 @tool

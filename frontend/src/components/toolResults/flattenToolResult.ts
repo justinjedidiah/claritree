@@ -34,6 +34,9 @@ function flattenValues(values: Record<string, unknown> | Record<string, unknown>
 
 function flattenMetricValues(result: Record<string, unknown>): FlattenedResult {
   const values = (result.values as Record<string, unknown>[]) ?? [];
+  if (values.length === 0) {
+    return { type: 'table', rows: [{error: 'Empty'}] }
+  }
   const rows: FlatRow[] = values.map(v => ({
     period:     v.period     as string,
     mtd:        v.mtd        as number,

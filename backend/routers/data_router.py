@@ -47,10 +47,14 @@ def data_with_filters(report_id:int, period: str):
         FROM calculation_formulas cf
         INNER JOIN report_metrics rm ON cf.parent_metric = rm.metric
     )
-    SELECT f.period, f.metric, f.nominal, f.mom_change, f.yoy_change
+    SELECT
+        f.period, f.metric,
+        f.mtd, f.qtd, f.ytd, f.balance,
+        f.mom_change, f.qoq_change, f.yoy_change
     FROM financials f
     INNER JOIN report_metrics rm ON f.metric = rm.metric
     WHERE f.period = {period_clause}
+    AND f.rcc IS NULL AND f.segment IS NULL
     """
 
     with engine.connect() as conn:

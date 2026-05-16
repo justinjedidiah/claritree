@@ -21,8 +21,11 @@ function flattenValues(values: Record<string, unknown> | Record<string, unknown>
   const arr = Array.isArray(values) ? values : [values];
   return arr.map(v => ({
     period:     (v.period     as string | null) ?? null,
-    nominal:    (v.nominal    as number | null) ?? null,
+    mtd:        (v.mtd        as number | null) ?? null,
+    qtd:        (v.qtd        as number | null) ?? null,
+    ytd:        (v.ytd        as number | null) ?? null,
     mom_change: (v.mom_change as number | null) ?? null,
+    qoq_change: (v.qoq_change as number | null) ?? null,
     yoy_change: (v.yoy_change as number | null) ?? null,
   }));
 }
@@ -33,8 +36,11 @@ function flattenMetricValues(result: Record<string, unknown>): FlattenedResult {
   const values = (result.values as Record<string, unknown>[]) ?? [];
   const rows: FlatRow[] = values.map(v => ({
     period:     v.period     as string,
-    nominal:    v.nominal    as number,
+    mtd:        v.mtd        as number,
+    qtd:        v.qtd        as number,
+    ytd:        v.ytd        as number,
     mom_change: v.mom_change as number,
+    qoq_change: v.qoq_change as number,
     yoy_change: v.yoy_change as number,
   }));
   return { type: 'table', rows };
@@ -102,8 +108,11 @@ function flattenMetricComponents(result: Record<string, unknown>): FlattenedResu
           : { cumulative_sign: (c.cumulative_sign ?? ' ') as string }),
         depth:      c.depth      as number,
         period:     null,
-        nominal:    null,
+        mtd:        null,
+        qtd:        null,
+        ytd:        null,
         mom_change: null,
+        qoq_change: null,
         yoy_change: null,
       }];
     }
@@ -138,8 +147,11 @@ function flattenMetricDependents(result: Record<string, unknown>): FlattenedResu
           : { operation: (d.operation ?? ' ') as string }),
         depth:           d.depth           as number,
         period:          null,
-        nominal:         null,
+        mtd:             null,
+        qtd:             null,
+        ytd:             null,
         mom_change:      null,
+        qoq_change:      null,
         yoy_change:      null,
       }];
     }

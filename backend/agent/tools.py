@@ -42,9 +42,9 @@ def resolve_report_name(name: str) -> str | None:
 # --- data tools ---
 @tool
 def get_all_reports() -> dict:
-    """Get all available reports with their id, name and description."""
+    """Get all available reports with their name and description."""
     with engine.connect() as conn:
-        r = conn.execute(text("SELECT id, name, description FROM reports ORDER BY id"))
+        r = conn.execute(text("SELECT name, description FROM reports ORDER BY id"))
         rows = [dict(x._mapping) for x in r]
     return {"reports": rows}
 
@@ -130,12 +130,12 @@ def get_metric_values(metric: str, start: Optional[str] = None, end: Optional[st
     """
     Get historical values for a specific metric over time.
     Optionally filter by start and end period (e.g. start='2024-01', end='2024-06').
-    Returns nominal value, MoM change, and YoY change per period.
+    Returns mtd value, qtd value, ytd value, MoM change, QoQ change, and YoY change per period.
     Use this when the user asks about trends, growth, or performance over time.
     """
     metric = resolve_metric_name(metric)
     q = """
-    SELECT period, metric, nominal, mom_change, yoy_change
+    SELECT period, metric, mtd, qtd, ytd, mom_change, qoq_change, yoy_change
     FROM financials
     WHERE metric = :m
     """
@@ -228,7 +228,7 @@ def get_metric_components(metric: str, depth: str = "direct", period: str = "lat
     params = {f"m{i}": m for i, m in enumerate(components)}
     if period == "latest":
         val_q = f"""
-        SELECT metric, period, nominal, mom_change, yoy_change
+        SELECT metric, period, mtd, qtd, ytd, mom_change, qoq_change, yoy_change
         FROM financials
         WHERE metric IN ({placeholders})
         AND period = (SELECT MAX(period) FROM financials)
@@ -241,7 +241,7 @@ def get_metric_components(metric: str, depth: str = "direct", period: str = "lat
                 values_dict[value_row["metric"]] = value_row
     else:
         val_q = f"""
-        SELECT metric, period, nominal, mom_change, yoy_change
+        SELECT metric, period, mtd, qtd, ytd, mom_change, qoq_change, yoy_change
         FROM financials
         WHERE metric IN ({placeholders})
         AND period LIKE :period
@@ -332,7 +332,7 @@ def get_metric_dependents(metric: str, depth: str = "direct", period: str = "lat
     params = {f"m{i}": m for i, m in enumerate(dependents)}
     if period == "latest":
         val_q = f"""
-        SELECT metric, period, nominal, mom_change, yoy_change
+        SELECT metric, period, mtd, qtd, ytd, mom_change, qoq_change, yoy_change
         FROM financials
         WHERE metric IN ({placeholders})
         AND period = (SELECT MAX(period) FROM financials)
@@ -345,7 +345,7 @@ def get_metric_dependents(metric: str, depth: str = "direct", period: str = "lat
                 values_dict[value_row["metric"]] = value_row
     else:
         val_q = f"""
-        SELECT metric, period, nominal, mom_change, yoy_change
+        SELECT metric, period, mtd, qtd, ytd, mom_change, qoq_change, yoy_change
         FROM financials
         WHERE metric IN ({placeholders})
         AND period LIKE :period
@@ -365,10 +365,10 @@ def get_metric_dependents(metric: str, depth: str = "direct", period: str = "lat
 
     # fetch source metric value
     if period == "latest":
-        src_q = "SELECT metric, period, nominal, mom_change, yoy_change FROM financials WHERE metric = :metric AND period = (SELECT MAX(period) FROM financials)"
+        src_q = "SELECT metric, period, mtd, qtd, ytd, mom_change, qoq_change, yoy_change FROM financials WHERE metric = :metric AND period = (SELECT MAX(period) FROM financials)"
         src_params = {"metric": metric}
     else:
-        src_q = "SELECT metric, period, nominal, mom_change, yoy_change FROM financials WHERE metric = :metric AND period LIKE :period"
+        src_q = "SELECT metric, period, mtd, qtd, ytd, mom_change, qoq_change, yoy_change FROM financials WHERE metric = :metric AND period LIKE :period"
         src_params = {"metric": metric, "period": period}
 
     with engine.connect() as conn:

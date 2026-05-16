@@ -279,7 +279,7 @@ export default function ChatPanel({appliedFilters}: {appliedFilters: DashboardPr
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-3 min-w-0">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`min-w-0 max-w-[88%] px-3 py-2 rounded-xl text-sm wrap-break-word ${
+            <div className={`min-w-0 max-w-[88%] overflow-hidden px-3 py-2 rounded-xl text-sm wrap-break-word ${
               msg.sender === 'user'
                 ? 'bg-indigo-500 text-white rounded-br-sm'
                 : 'bg-gray-100 text-gray-800 rounded-bl-sm'

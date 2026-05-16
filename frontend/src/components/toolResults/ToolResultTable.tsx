@@ -7,11 +7,11 @@ interface Props {
 
 const formatValue = (key: string, val: string | number | null): string => {
   if (val === null || val === undefined) return '—';
-  if ((key === 'mom_change' || key === 'yoy_change') && typeof val === 'number') {
+  if ((key === 'mom_change' || key === 'qoq_change' || key === 'yoy_change') && typeof val === 'number') {
     const sign = val >= 0 ? '+' : '';
     return `${sign}${(val * 100).toFixed(2)}%`;
   }
-  if (key === 'nominal' && typeof val === 'number') {
+  if ((key === 'mtd' || key === 'qtd' || key === 'ytd') && typeof val === 'number') {
     return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
   return String(val);
@@ -20,8 +20,11 @@ const formatValue = (key: string, val: string | number | null): string => {
 const COLUMN_LABELS: Record<string, string> = {
   period:          'Period',
   metric:          'Metric',
-  nominal:         'Value',
+  mtd:             'MtD',
+  qtd:             'QtD',
+  ytd:             'YtD',
   mom_change:      'MoM',
+  qoq_change:      'QoQ',
   yoy_change:      'YoY',
   component:       'Component',
   dependent:       'Dependent',
@@ -38,12 +41,12 @@ export default function ToolResultTable({ rows, topMessage }: Props) {
   const columns = Object.keys(rows[0]);
 
   return (
-    <div className="mt-2">
+    <div className="mt-2 min-w-0 overflow-hidden">
       {topMessage && (
         <p className="text-[10px] text-gray-400 mb-1 leading-snug">{topMessage}</p>
       )}
-      <div className="overflow-x-auto">
-        <table className="w-full text-[11px] border-collapse">
+      <div className="overflow-x-auto overflow-y-auto w-0 min-w-full max-h-48">
+        <table className="w-auto text-[11px] border-collapse">
           <thead>
             <tr>
               {columns.map(col => (
